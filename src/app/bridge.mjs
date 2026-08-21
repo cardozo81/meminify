@@ -5,6 +5,8 @@ import { deriveEffectiveConfiguration, loadConfiguration } from '../configuratio
 import { createDefaultMinifierRegistry } from '../minifiers/index.js';
 import { createExecutionPlan, executePlan } from '../execution/index.js';
 import { listArtifacts, readArtifact, writeOperationalReports, writeTechnicalLog } from '../observability/index.mjs';
+import { createBackupRestorePlan, createLastMinRestorePlan, executeRestorePlan, listKnownBackups } from '../restore/index.js';
+import { resolveRuntimePaths } from '../runtime/paths.js';
 
 const configurationDirectory = 'Configuracao';
 const configurationName = 'configuracao.ini';
@@ -105,6 +107,36 @@ async function createPlan(request, persistent) {
 
 export async function runBridgeRequest(request, { projectRoot = process.cwd() } = {}) {
   const persistent = await loadPersistent(projectRoot);
+  if (request.command === 'list-backups') {
+    try { return { ok: true, backups: await listKnownBackups(projectRoot) }; }
+    catch (error) { return { ok: false, diagnostic: diagnostic(error) }; }
+  }
+  if (request.command === 'plan-restore') {
+    if (!['backup', 'last-min'].includes(request.kind)) return { ok: false, diagnostic: { code: 'INVALID_RESTORE_KIND', message: 'O tipo de restauração é inválido.' } };
+    try {
+      const plan = request.kind === 'backup'
+        ? await createBackupRestorePlan({ projectRoot, backupDirectory: request.backupDirectory })
+        : await createLastMinRestorePlan({ projectRoot });
+      return { ok: true, plan };
+    } catch (error) { return { ok: false, diagnostic: diagnostic(error) }; }
+  }
+  if (request.command === 'execute-restore') {
+    if (!['backup', 'last-min'].includes(request.kind)) return { ok: false, diagnostic: { code: 'INVALID_RESTORE_KIND', message: 'O tipo de restauração é inválido.' } };
+    const startedAt = performance.now();
+    let plan = null;
+    try {
+      plan = request.kind === 'backup'
+        ? await createBackupRestorePlan({ projectRoot, backupDirectory: request.backupDirectory })
+        : await createLastMinRestorePlan({ projectRoot });
+      const result = await executeRestorePlan(plan, { confirmed: request.confirmed === true, confirmChanged: request.confirmChanged === true });
+      const artifacts = await persistArtifacts({ projectRoot, plan, result, resultStatus: result.status, startedAt, phases: [{ name: 'restauração manual', status: result.status }] });
+      return { ok: true, plan, result, artifacts };
+    } catch (error) {
+      const reportPlan = plan ?? { executionId: 'restore-validation', outputMode: request.kind, profile: null, engine: { id: null, version: null }, backupRoot: request.backupDirectory ?? null, runtimePaths: resolveRuntimePaths(projectRoot), items: [], ignored: [], diagnostics: { errors: [{ code: error.code, message: error.message }], blockers: [{ code: error.code, message: error.message }] } };
+      const artifacts = await persistArtifacts({ projectRoot, plan: reportPlan, resultStatus: error.code === 'RESTORE_RECOVERY_REQUIRED' ? 'recovery-required' : 'validation-failure', error, startedAt, phases: [{ name: 'restauração manual', status: 'falha', code: error.code }] });
+      return { ok: false, diagnostic: diagnostic(error), artifacts };
+    }
+  }
   if (request.command === 'list-artifacts') {
     try { return { ok: true, kind: request.kind, names: await listArtifacts(projectRoot, request.kind) }; }
     catch (error) { return { ok: false, diagnostic: diagnostic(error) }; }

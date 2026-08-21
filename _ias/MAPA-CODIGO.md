@@ -93,6 +93,14 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/observability.test.js` | Testes focados de logs, relatórios, CSV, falhas, recuperação e leitura read-only | `src/observability/index.mjs`, bridge |
 | `test/ui.test.js` | Validação textual mínima dos fluxos PowerShell de listagem, cancelamento e indisponibilidade | `src/app/ui.ps1` |
 
+## Restauração manual
+
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `src/restore/index.js` | Planos imutáveis e execução segura de restauração por backup ou última execução `.min` | Manifesto, estado, journal, SHA-256 e filesystem transacional |
+| `test/restore.test.js` | Testes temporários de integridade, confirmações, `.min`, falha parcial e cancelamento | Bridge e núcleo de restauração |
+| `src/runtime/paths.js` | Inclui o caminho técnico do journal de restauração manual | Node.js `path` |
+
 ## Qualidade e testes
 
 | Arquivo | Responsabilidade | Dependências relevantes |
@@ -106,4 +114,4 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/execution.test.js` | Testes focados de pré-análise, write-ahead, conflitos, execução, rollback e interrupção | `node:test`, módulos de execução |
 | `test/runtime.test.js` | Testes focados de política Node, package/lock, dependências e bootstrap sem instalação real | `node:test`, módulos runtime |
 
-Restauração manual, retenção automática, análise final de risco e distribuição ainda não existem; não são representados como placeholders neste mapa.
+Retenção automática, análise final de risco e distribuição ainda não existem; não são representados como placeholders neste mapa.

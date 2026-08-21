@@ -15,6 +15,7 @@ export const ITEM_STATUSES = Object.freeze([
 
 const OPERATIONS = new Set(['overwrite-original', 'create-output', 'replace-output']);
 const MANIFEST_STATUSES = new Set(['not-applicable', 'planned', 'written', 'rolled-back']);
+const MANUAL_RESTORE_STATUSES = new Set(['restored-source', 'deleted-min', 'already-absent']);
 
 function validHash(value) {
   return value === null || SHA256_PATTERN.test(value);
@@ -38,6 +39,9 @@ export function validateExecutionJournal(journal) {
       if (!validHash(item.sourceHash) || !validHash(item.expectedOutputHash) || !validHash(item.previousHash)) throw new Error('Hash inválido.');
       if (item.recovery !== null) {
         if (!isAbsolute(item.recovery.path) || !SHA256_PATTERN.test(item.recovery.hash) || !['source-backup', 'preexisting-output'].includes(item.recovery.type)) throw new Error('Referência de recuperação inválida.');
+      }
+      if (item.manualRestoreStatus !== undefined && item.manualRestoreStatus !== null && !MANUAL_RESTORE_STATUSES.has(item.manualRestoreStatus)) {
+        throw new Error('Estado de restauração manual inválido.');
       }
       const destinationIdentity = process.platform === 'win32' ? item.destinationPath.toLowerCase() : item.destinationPath;
       if (itemIds.has(item.id) || destinations.has(destinationIdentity)) throw new Error('Item ou destino duplicado.');

@@ -42,6 +42,7 @@ async function validateCompletedConsistency(journal) {
     throw new ExecutionError('JOURNAL_STATE_CONTRADICTION', 'O journal concluído não possui estado técnico confiável correspondente.', { cause });
   }
   for (const item of journal.items) {
+    if (item.manualRestoreStatus) continue;
     const sourceIdentity = process.platform === 'win32' ? item.sourcePath.toLowerCase() : item.sourcePath;
     const record = state.records.find((candidate) => (
       (process.platform === 'win32' ? candidate.sourcePath?.toLowerCase() : candidate.sourcePath) === sourceIdentity

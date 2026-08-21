@@ -35,7 +35,7 @@ function rowsFrom({ plan, result = null, status = null, durationMs = null, minif
       caminho: item.sourcePath,
       tipo: item.fileType,
       status: executionItem?.status === 'confirmed' ? 'minificado' : (executionItem?.status ?? status ?? 'elegível'),
-      motivo: '',
+      motivo: executionItem?.reason ?? '',
       tamanhoOriginal: item.sourceSize,
       tamanhoFinal: finalSize,
       reducaoBytes: red.bytes,

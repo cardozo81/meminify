@@ -68,6 +68,53 @@ function Show-Artefatos {
     if ($content.ok) { Show-Mensagem "`n$($content.content)" White } else { Show-Mensagem "Erro: $($content.diagnostic.message)" Red }
 }
 
+function Invoke-RestoreFlow {
+    param([ValidateSet('backup', 'last-min')][string]$Kind, [string]$BackupDirectory = '')
+    $request = @{ command = 'plan-restore'; kind = $Kind }
+    if ($BackupDirectory) { $request.backupDirectory = $BackupDirectory }
+    $response = Invoke-MeminifyBridge $request
+    if (-not $response.ok) { Show-Mensagem "Restauração bloqueada: $($response.diagnostic.message)" Red; return }
+    Show-Mensagem "`nPlano de restauração: $($response.plan.sourceExecutionId)" Cyan
+    foreach ($item in $response.plan.items) { Show-Mensagem "- $($item.classification): $($item.destinationPath)" $(if ($item.requiresChangedConfirmation) { 'Yellow' } else { 'White' }) }
+    foreach ($item in $response.plan.ignored) { Show-Mensagem "- não será alterado: $($item.normalizedPath) ($($item.reason))" Gray }
+    if (-not (Confirmar-Acao 'Confirmar a restauração do escopo exibido')) { Show-Mensagem 'Restauração cancelada; nenhum arquivo foi alterado.' Yellow; return }
+    $confirmChanged = $false
+    if (($response.plan.items | Where-Object { $_.requiresChangedConfirmation }).Count -gt 0) {
+        $confirmChanged = Confirmar-Acao 'Autorizar também a sobrescrita/exclusão dos arquivos alterados ou atualmente ausentes listados'
+    }
+    $execute = @{ command = 'execute-restore'; kind = $Kind; confirmed = $true; confirmChanged = $confirmChanged }
+    if ($BackupDirectory) { $execute.backupDirectory = $BackupDirectory }
+    $result = Invoke-MeminifyBridge $execute
+    if (-not $result.ok) { Show-Mensagem "Falha de restauração: $($result.diagnostic.message)" Red; return }
+    foreach ($item in $result.result.items) { Show-Mensagem "- $($item.status): $($item.path)" $(if ($item.status -in @('restored', 'deleted-min', 'already-absent')) { 'Green' } else { 'Yellow' }) }
+    Show-Mensagem "Restauração: $($result.result.status)" $(if ($result.result.status -eq 'completed') { 'Green' } else { 'Yellow' })
+}
+
+function Show-RestoreMenu {
+    Write-Host "`n1. Listar backups conhecidos e restaurar"
+    Write-Host '2. Informar pasta de backup manualmente'
+    Write-Host '3. Restaurar última execução .min'
+    Write-Host '0. Voltar'
+    $choice = (Read-Host 'Escolha').Trim()
+    switch ($choice) {
+        '1' {
+            $response = Invoke-MeminifyBridge @{ command = 'list-backups' }
+            if (-not $response.ok) { Show-Mensagem "Erro: $($response.diagnostic.message)" Red; return }
+            $valid = @($response.backups | Where-Object { $_.status -eq 'valid' })
+            if ($valid.Count -eq 0) { Show-Mensagem 'Nenhum backup válido conhecido.' Yellow; return }
+            for ($index = 0; $index -lt $valid.Count; $index++) { Write-Host "$($index + 1). $($valid[$index].executionId) - $($valid[$index].directory)" }
+            $selected = (Read-Host 'Número; Enter cancela').Trim()
+            $number = 0
+            if (-not $selected -or -not [int]::TryParse($selected, [ref]$number) -or $number -lt 1 -or $number -gt $valid.Count) { Show-Mensagem 'Seleção cancelada ou inválida; nenhum arquivo foi alterado.' Yellow; return }
+            Invoke-RestoreFlow backup $valid[$number - 1].directory
+        }
+        '2' { $directory = (Read-Host 'Pasta exata do backup').Trim(); if ($directory) { Invoke-RestoreFlow backup $directory } else { Show-Mensagem 'Restauração cancelada.' Yellow } }
+        '3' { Invoke-RestoreFlow last-min }
+        '0' { return }
+        default { Show-Mensagem 'Opção inválida; nenhum arquivo foi alterado.' Yellow }
+    }
+}
+
 function Start-MeminifyUi {
     $script:TemporaryAdjustments = @{}
     while ($true) {
@@ -107,7 +154,7 @@ function Start-MeminifyUi {
                         if (Confirmar-Acao 'Criar a configuração a partir do modelo, sem sobrescrever arquivo existente') { Show-Mensagem ((Invoke-MeminifyBridge @{ command = 'create-configuration'; confirmed = $true }).configurationPath) Green }
                     } else { Show-Mensagem "Erro de configuração: $($summary.diagnostic.message)" Red }
                 }
-                '5' { Show-Mensagem 'Backups e restauração ainda não disponível.' Yellow }
+                '5' { Show-RestoreMenu }
                 '6' { Show-Artefatos reports }
                 '7' { Show-Artefatos logs }
                 '0' { return }
