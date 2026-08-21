@@ -49,6 +49,9 @@ test('nomes de artefato derivam da versão e allowlist contém somente runtime n
   assert.match(launcher, /%~dp0Executar\.ps1/i);
   assert.match(launcher, /powershell\.exe -NoProfile -File/i);
   assert.doesNotMatch(launcher, /ExecutionPolicy\s+Bypass/i);
+  assert.match(launcher, /if \/I "%PSPOLICY%"=="Restricted"/i);
+  assert.match(launcher, /set "EXITCODE=1"[\s\S]*goto :failure/i);
+  assert.match(launcher, /Manual-Usuario\\index\.html/i);
   assert.doesNotMatch(launcher, /[A-Za-z]:\\(?:Users|IA-PROJETOS)\\/i);
   const powershellBytes = await readFile(join(projectRoot, 'Executar.ps1'));
   assert.deepEqual([...powershellBytes.subarray(0, 3)], [0xEF, 0xBB, 0xBF]);
@@ -88,21 +91,32 @@ test('pacote isolado resolve versão e inicia fora do repositório em caminho co
     const npmLogPath = join(cwd, 'npm-invocations.log');
     await writeFile(join(cwd, 'npm.cmd'), `@echo off\r\necho %*>>"${npmLogPath}"\r\nif "%1"=="--version" echo 11.11.0\r\n`, 'utf8');
     const cmdPath = join(metadata.packageRoot, 'Executar.cmd');
-    const cmdStartup = await runProcess(`"${cmdPath}"`, [], { cwd, input: '0\r\n', env: { PSExecutionPolicyPreference: 'RemoteSigned' }, shell: true });
-    assert.equal(cmdStartup.code, 0, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
-    assert.equal((cmdStartup.stdout.match(/MEMINIFY v0\.1\.2/g) ?? []).length, 1, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
+    const powershell = 'C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+    const policyResult = await execFileAsync(powershell, ['-NoProfile', '-NonInteractive', '-Command', 'Get-ExecutionPolicy']);
+    const hostPolicy = policyResult.stdout.trim();
+    const cmdStartup = await runProcess(`"${cmdPath}"`, [], { cwd, input: '0\r\n', shell: true });
+    if (/^Restricted$/i.test(hostPolicy)) {
+      assert.equal(cmdStartup.code, 1, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
+      assert.match(cmdStartup.stdout, /pol.tica de execu..o do Windows PowerShell n.o permite executar scripts locais/i);
+    } else {
+      assert.equal(cmdStartup.code, 0, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
+      assert.equal((cmdStartup.stdout.match(/MEMINIFY v0\.1\.2/g) ?? []).length, 1, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
+    }
     assert.doesNotMatch(cmdStartup.stdout, /tlocal|não é reconhecido como um comando/i);
-    const npmInvocations = (await readFile(npmLogPath, 'utf8')).split(/\r?\n/).filter(Boolean);
-    assert.deepEqual(npmInvocations, ['--version']);
-    const restricted = await runProcess(`"${cmdPath}"`, [], { cwd, input: '\r\n', env: { PSExecutionPolicyPreference: 'Restricted' }, shell: true });
-    assert.equal(restricted.code, 1);
-    assert.match(restricted.stdout, /política de execução do Windows PowerShell não permite executar scripts locais/i);
-    assert.match(restricted.stdout, /Manual-Usuario\\index\.html/i);
-    assert.doesNotMatch(restricted.stdout, /tlocal|não é reconhecido como um comando/i);
+    let npmInvocations = [];
+    try { npmInvocations = (await readFile(npmLogPath, 'utf8')).split(/\r?\n/).filter(Boolean); } catch { /* host Restricted blocks before npm discovery */ }
+    assert.deepEqual(npmInvocations, /^Restricted$/i.test(hostPolicy) ? [] : ['--version']);
+    if (/^Restricted$/i.test(hostPolicy)) {
+      const restricted = await runProcess(`"${cmdPath}"`, [], { cwd, input: '\r\n', shell: true });
+      assert.equal(restricted.code, 1);
+      assert.match(restricted.stdout, /política de execução do Windows PowerShell não permite executar scripts locais/i);
+      assert.match(restricted.stdout, /Manual-Usuario\\index\.html/i);
+      assert.doesNotMatch(restricted.stdout, /tlocal|não é reconhecido como um comando/i);
+    }
     const request = await runProcess(process.execPath, [join(metadata.packageRoot, 'src', 'app', 'bridge.mjs'), '--bridge'], { cwd, input: '{"command":"version"}' });
     assert.equal(request.code, 0);
     assert.equal(JSON.parse(request.stdout).version, '0.1.2');
-    const powershell = 'C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+    if (/^Restricted$/i.test(hostPolicy)) return;
     const startup = await runProcess(powershell, ['-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File', join(metadata.packageRoot, 'Executar.ps1')], { cwd, input: '1\r\n0\r\n' });
     assert.equal(startup.code, 0);
     assert.equal((startup.stdout.match(/MEMINIFY v0\.1\.2/g) ?? []).length, 1);

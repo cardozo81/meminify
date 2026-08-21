@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "esbuild": "0.28.2",
-    "ini": "7.0.0",
+    "ini": "6.0.0",
     "micromatch": "4.0.8"
   }
 }

@@ -21,7 +21,7 @@ const policy = {
   wingetPackage: 'OpenJS.NodeJS.LTS',
 };
 
-async function projectFixture({ dependency = true } = {}) {
+async function projectFixture({ dependency = true, dependencyEngine } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'meminify-runtime-'));
   const packageJson = { name: 'fixture', private: true, dependencies: { fixturedep: '1.2.3' } };
   const lockJson = {
@@ -32,7 +32,7 @@ async function projectFixture({ dependency = true } = {}) {
   await writeFile(join(root, 'package-lock.json'), JSON.stringify(lockJson));
   if (dependency) {
     await mkdir(join(root, 'node_modules', 'fixturedep'), { recursive: true });
-    await writeFile(join(root, 'node_modules', 'fixturedep', 'package.json'), JSON.stringify({ name: 'fixturedep', version: '1.2.3' }));
+    await writeFile(join(root, 'node_modules', 'fixturedep', 'package.json'), JSON.stringify({ name: 'fixturedep', version: '1.2.3', ...(dependencyEngine ? { engines: { node: dependencyEngine } } : {}) }));
   }
   return root;
 }
@@ -149,4 +149,26 @@ test('Executar.ps1 passa pelo parser PowerShell sem alterar política de execuç
   await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], { windowsHide: true });
   const text = await readFile(scriptPath, 'utf8');
   assert.equal(/Set-ExecutionPolicy/i.test(text), false);
+});
+
+test('direct dependency engine validation accepts Node 25 when declared and blocks conflicts', async () => {
+  const acceptedRoot = await projectFixture({ dependencyEngine: '^20.17.0 || >=22.9.0' });
+  try {
+    assert.equal((await validateProjectDependencies({ projectRoot: acceptedRoot, runtimeVersion: 'v25.8.2' })).valid, true);
+  } finally { await rm(acceptedRoot, { recursive: true, force: true }); }
+  const blockedRoot = await projectFixture({ dependencyEngine: '^24.0.0' });
+  try {
+    const result = await validateProjectDependencies({ projectRoot: blockedRoot, runtimeVersion: 'v25.8.2' });
+    assert.equal(result.valid, false);
+    assert.equal(result.diagnostics[0].code, 'DEPENDENCY_NODE_ENGINE_UNSUPPORTED');
+  } finally { await rm(blockedRoot, { recursive: true, force: true }); }
+});
+
+test('ini 6.0.0 é a dependência direta exata e declara compatibilidade com Node 25', async () => {
+  const manifest = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8'));
+  const installed = JSON.parse(await readFile(join(process.cwd(), 'node_modules', 'ini', 'package.json'), 'utf8'));
+  assert.equal(manifest.dependencies.ini, '6.0.0');
+  assert.equal(installed.version, '6.0.0');
+  assert.match(installed.engines.node, /\^20\.17\.0/);
+  assert.match(installed.engines.node, />=22\.9\.0/);
 });

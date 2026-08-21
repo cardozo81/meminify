@@ -7,6 +7,8 @@
 - Compatibilidade explícita com Node.js 25.x, incluindo validação de Node.js 25.8.2.
 - Política de runtime com major mínima 24 e bloqueio de majors futuras não listadas.
 - Node.js 24.x permanece a linha LTS preferida; Node.js 25.x compatível não aciona instalação automática da linha 24.
+- Dependência direta `ini` fixada em 6.0.0, compatível com Node.js 24.x e 25.x, preservando o contrato de configuração existente.
+- Validação fail-closed dos engines declarados pelas dependências diretas e teste do launcher alinhado à política efetiva do host.
 
 ### 0.1.1
 
