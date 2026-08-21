@@ -54,6 +54,18 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `src/integrity/backup.js` | Mapeamento, cópia e validação SHA-256 do backup de fontes | Node.js `fs/promises`, `path` |
 | `src/integrity/index.js` | API pública da fundação de integridade | Módulos de integridade |
 
+## Pré-análise e execução transacional
+
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `src/execution/errors.js` | Erros estruturados de planejamento, execução e recuperação | Nenhuma |
+| `src/execution/planner.js` | Pré-análise imutável, destinos `.min`, conflitos, hashes e autorizações exigidas | Scanner, domínio e integridade |
+| `src/execution/journal.js` | Schema e persistência do journal write-ahead da última execução | Integridade e domínio |
+| `src/execution/filesystem.js` | Criação/substituição exata, cópias de recuperação e provas SHA-256 | Node.js built-ins, integridade |
+| `src/execution/recovery.js` | Rollback exato e recuperação determinística de execução interrompida | Journal, estado e filesystem transacional |
+| `src/execution/executor.js` | Coordenação dos dois modos, minificação, estado, manifesto e rollback | Minificador, integridade e execução |
+| `src/execution/index.js` | API pública de pré-análise e execução transacional | Módulos de execução |
+
 ## Qualidade e testes
 
 | Arquivo | Responsabilidade | Dependências relevantes |
@@ -64,5 +76,6 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/minifiers.test.js` | Testes focados de registry, adapter, perfis, JS, CSS e resultados neutros | `node:test`, adapter esbuild |
 | `test/scanner.test.js` | Testes focados de recursão, glob, exclusões, links, readonly e deduplicação | `node:test`, módulos do scanner |
 | `test/integrity.test.js` | Testes focados de SHA-256, estado, manifesto, backup e diretório temporário | `node:test`, módulos de integridade |
+| `test/execution.test.js` | Testes focados de pré-análise, write-ahead, conflitos, execução, rollback e interrupção | `node:test`, módulos de execução |
 
-Interface, execução orquestrada, restauração e distribuição ainda não existem; não são representados como placeholders neste mapa.
+Interface PowerShell, restauração manual, análise final de risco e distribuição ainda não existem; não são representados como placeholders neste mapa.

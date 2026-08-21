@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, rm } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { TextDecoder } from 'node:util';
 import { IntegrityError } from './errors.js';
@@ -31,10 +31,16 @@ export async function readJsonUtf8(filePath, kind) {
 export async function writeJsonUtf8Atomic(filePath, value, kind) {
   await mkdir(dirname(filePath), { recursive: true });
   const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+  let handle;
   try {
-    await writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
+    handle = await open(temporaryPath, 'wx');
+    await handle.writeFile(`${JSON.stringify(value, null, 2)}\n`, 'utf8');
+    await handle.sync();
+    await handle.close();
+    handle = undefined;
     await rename(temporaryPath, filePath);
   } catch (cause) {
+    await handle?.close().catch(() => {});
     await rm(temporaryPath, { force: true }).catch(() => {});
     throw new IntegrityError(`${kind}_WRITE_FAILED`, `Não foi possível persistir ${filePath} com segurança.`, { filePath, cause });
   }

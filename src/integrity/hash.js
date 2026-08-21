@@ -16,3 +16,10 @@ export function hashFileSha256(filePath) {
     stream.on('end', () => resolve(hash.digest('hex')));
   });
 }
+
+export function hashContentSha256(content) {
+  if (typeof content !== 'string' && !Buffer.isBuffer(content) && !(content instanceof Uint8Array)) {
+    throw new IntegrityError('INVALID_HASH_CONTENT', 'O conteúdo para SHA-256 deve ser texto ou bytes.');
+  }
+  return createHash('sha256').update(content).digest('hex');
+}

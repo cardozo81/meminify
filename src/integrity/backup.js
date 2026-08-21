@@ -18,13 +18,13 @@ function isInside(rootPath, candidatePath) {
 
 async function requireRegularPathWithoutLinks(rootPath, sourcePath) {
   if (!isInside(rootPath, sourcePath)) throw new IntegrityError('SOURCE_OUTSIDE_ORIGIN', 'O arquivo de origem está fora da raiz informada.');
-  await requireNoLinksInPath(sourcePath);
+  await assertPathHasNoLinks(sourcePath);
   const sourceStats = await lstat(sourcePath);
   if (!sourceStats.isFile()) throw new IntegrityError('SOURCE_NOT_FILE', 'A origem do backup deve ser um arquivo regular.');
   return sourceStats;
 }
 
-async function requireNoLinksInPath(filePath, allowMissing = false) {
+export async function assertPathHasNoLinks(filePath, { allowMissing = false } = {}) {
   const normalizedPath = normalize(resolve(filePath));
   const rootPath = parse(normalizedPath).root;
   let currentPath = rootPath;
@@ -66,9 +66,9 @@ export async function createValidatedSourceBackup(input, dependencies = {}) {
   const hash = dependencies.hashFile ?? hashFileSha256;
   const copy = dependencies.copyFile ?? copyFile;
   const sourceSha256 = await hash(normalizedSource);
-  await requireNoLinksInPath(dirname(backupPath), true);
+  await assertPathHasNoLinks(dirname(backupPath), { allowMissing: true });
   await mkdir(dirname(backupPath), { recursive: true });
-  await requireNoLinksInPath(dirname(backupPath));
+  await assertPathHasNoLinks(dirname(backupPath));
   try {
     await copy(normalizedSource, backupPath, constants.COPYFILE_EXCL);
   } catch (cause) {

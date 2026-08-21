@@ -110,7 +110,7 @@ Se um novo `.min` registrado já não existir, ele não deve ser recriado e deve
 
 ## Controle da última execução
 
-O controle técnico dedicado tem localização conceitual em `Dados\Restauracao\ultima-execucao.bkp`. A extensão `.bkp` identifica um controle de recuperação e não implica cópia binária de fontes; internamente pode ser usado um formato estruturado UTF-8, como JSON.
+O controle técnico dedicado fica em `Dados\Restauracao\ultima-execucao.bkp`. A extensão `.bkp` identifica um controle de recuperação e não implica cópia binária de fontes; seu formato é JSON estruturado em UTF-8.
 
 O controle deve conter informação suficiente para desfazer somente os efeitos permitidos da última execução, incluindo, conforme aplicável:
 
@@ -125,6 +125,24 @@ O controle deve conter informação suficiente para desfazer somente os efeitos 
 
 Devem ser diferenciados, no mínimo, “saída criada nesta execução” e “saída preexistente sobrescrita”.
 
-O rastreamento deve sobreviver suficientemente a uma execução parcial para impedir alterações não rastreadas. Detalhes de persistência resistente a falhas serão decididos na implementação, preservando a garantia:
+## Protocolo write-ahead
+
+O journal usa persistência por arquivo temporário durável e `rename`, com estados explícitos de execução e de cada item. O fluxo mínimo é:
+
+1. persistir o plano e o snapshot anterior do estado técnico;
+2. preparar e validar a referência exata de backup ou recuperação;
+3. persistir a intenção com hashes anterior e esperado;
+4. executar somente a mutação registrada;
+5. comprovar o resultado por SHA-256 e marcar o item como confirmado;
+6. atualizar `Dados\estado.json` somente depois dessa confirmação;
+7. marcar a execução como concluída somente após todos os itens e metadados obrigatórios estarem comprovados.
+
+Os estados de execução são `planned`, `prepared`, `running`, `completed`, `rolled-back` e `recovery-required`. Os itens distinguem planejamento, preparação, intenção de mutação, confirmação, rollback e necessidade de recuperação.
+
+Antes de uma nova execução mutante, o journal deve ser validado. Transações incompletas são revertidas somente quando caminhos, hashes e cópias de recuperação provam deterministicamente a ação. Divergência externa ou referência inválida bloqueia a nova execução em `recovery-required`. Nenhuma recuperação usa curinga.
+
+O snapshot anterior de `Dados\estado.json` integra o journal. Rollback comprovado restaura esse snapshot ou remove o estado criado pela tentativa; rollback ambíguo não fabrica consistência entre estado e arquivos.
+
+O rastreamento deve sobreviver suficientemente a uma execução parcial para impedir alterações não rastreadas, preservando a garantia:
 
 **Nenhuma mutação confirmada no sistema de arquivos pode existir sem rastreamento recuperável correspondente.**

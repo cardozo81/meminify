@@ -17,6 +17,7 @@
 - As dependências `ini@7.0.0` e `esbuild@0.28.2` foram introduzidas em versões exatas e estão bloqueadas no lockfile; versões futuras são selecionadas quando cada dependência for introduzida e devem permanecer reproduzíveis.
 - A seleção de padrões do scanner usa `micromatch@4.0.8`, fixada exatamente no manifesto e lockfile.
 - O diretório temporário interno do runtime é `Dados\Temporarios\` e permanece uma exclusão técnica obrigatória do scanner.
+- O rastreamento resistente a interrupções usa journal JSON UTF-8 write-ahead em `Dados\Restauracao\ultima-execucao.bkp`, persistido por temporário durável e `rename` antes das mutações registradas.
 
 Os detalhes normativos de cada decisão pertencem aos documentos temáticos indicados por `_ias/INDEX.md`.
 
@@ -31,7 +32,6 @@ As seguintes decisões permanecem deliberadamente sem valor inventado. A área f
 - opções detalhadas permitidas no perfil `Personalizado` — perfis e adaptadores;
 - versões exatas de futuras dependências — fase que introduzir cada dependência;
 - layout final detalhado do pacote de distribuição — distribuição;
-- mecanismo concreto de persistência resistente a falhas para o rastreamento da execução — transações e recuperação;
 - método detalhado para calcular o risco estimado de uma execução — UX e análise de risco.
 
 Esses pontos exigem decisão explícita em tarefa futura. Nenhum padrão, fallback ou valor deve ser inferido enquanto permanecerem pendentes.
