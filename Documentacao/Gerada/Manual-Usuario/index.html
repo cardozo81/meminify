@@ -25,7 +25,7 @@ a { color: #005a9c; }
 <h2>Requisitos e primeira execução</h2>
 <ul>
 <li>Windows com Windows PowerShell.</li>
-<li>Node.js LTS homologado: linhas 24 ou 22; a linha 24 é preferida.</li>
+<li>Node.js compatível: linha 24.x (LTS recomendada) ou 25.x; a major mínima é 24 e majors futuras não são aceitas automaticamente.</li>
 <li>Dependências locais do projeto.</li>
 </ul>
 <p>Para o uso normal, execute <code>Executar.cmd</code> com duplo clique na raiz. Ele apenas inicia <code>Executar.ps1</code> relativo ao pacote, sem alterar a política de execução do PowerShell. <code>Executar.ps1</code> é a alternativa técnica/direta. O bootstrap valida Node, npm, <code>package.json</code>, <code>package-lock.json</code> e dependências. Se Node estiver ausente ou não homologado, pode oferecer a instalação exata autorizada via winget. Recusar a instalação não altera o sistema.</p>

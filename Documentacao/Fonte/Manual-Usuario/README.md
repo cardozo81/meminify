@@ -9,7 +9,7 @@ Não existe risco zero. O risco do perfil é exibido separadamente do risco esti
 ## Requisitos e primeira execução
 
 - Windows com Windows PowerShell.
-- Node.js LTS homologado: linhas 24 ou 22; a linha 24 é preferida.
+- Node.js compatível: linha 24.x (LTS recomendada) ou 25.x; a major mínima é 24 e majors futuras não são aceitas automaticamente.
 - Dependências locais do projeto.
 
 Para o uso normal, execute `Executar.cmd` com duplo clique na raiz. Ele apenas inicia `Executar.ps1` relativo ao pacote, sem alterar a política de execução do PowerShell. `Executar.ps1` é a alternativa técnica/direta. O bootstrap valida Node, npm, `package.json`, `package-lock.json` e dependências. Se Node estiver ausente ou não homologado, pode oferecer a instalação exata autorizada via winget. Recusar a instalação não altera o sistema.

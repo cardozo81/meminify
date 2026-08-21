@@ -12,9 +12,11 @@ import { loadRuntimePolicy, parseNodeVersion, validateNodeRuntimeVersion, valida
 const execFileAsync = promisify(execFile);
 
 const policy = {
-  formatVersion: 1,
-  homologatedMajorLines: [24, 22],
+  formatVersion: 2,
+  minimumMajor: 24,
+  supportedMajorLines: [24, 25],
   preferredMajor: 24,
+  preferredChannel: 'LTS',
   approvedAutomaticInstallVersion: '24.19.0',
   wingetPackage: 'OpenJS.NodeJS.LTS',
 };
@@ -49,17 +51,34 @@ function runtimeRunner({ version = 'v24.1.0', npmVersion = '10.0.0', winget = tr
   return { runner, calls };
 }
 
-test('política runtime aceita Node 24 e 22 e rejeita 26, EOL/unsupported e versões malformadas', async () => {
+test('política runtime aceita Node 24 e 25.8.2 e rejeita majors não suportadas ou versões malformadas', async () => {
   const loaded = await loadRuntimePolicy(join(process.cwd(), 'resources', 'runtime-policy.json'));
-  assert.deepEqual(loaded.homologatedMajorLines, [24, 22]);
+  assert.equal(loaded.minimumMajor, 24);
+  assert.deepEqual(loaded.supportedMajorLines, [24, 25]);
   assert.equal(loaded.preferredMajor, 24);
+  assert.equal(loaded.preferredChannel, 'LTS');
   assert.equal(loaded.approvedAutomaticInstallVersion, '24.19.0');
   assert.equal(validateNodeRuntimeVersion('v24.19.0', policy).valid, true);
-  assert.equal(validateNodeRuntimeVersion('22.12.0', policy).valid, true);
+  assert.equal(validateNodeRuntimeVersion('v25.8.2', policy).valid, true);
+  assert.equal(validateNodeRuntimeVersion('v25.8.2', policy).preferred, false);
+  assert.equal(validateNodeRuntimeVersion('v23.11.1', policy).valid, false);
   assert.equal(validateNodeRuntimeVersion('26.0.0', policy).valid, false);
-  assert.equal(validateNodeRuntimeVersion('20.19.0', policy).valid, false);
+  assert.equal(validateNodeRuntimeVersion('27.0.0', policy).valid, false);
   assert.throws(() => parseNodeVersion('v24'), (error) => error instanceof RuntimePolicyError && error.code === 'MALFORMED_NODE_VERSION');
   assert.throws(() => validateRuntimePolicy({ ...policy, preferredMajor: 26 }), (error) => error.code === 'INVALID_RUNTIME_POLICY');
+  assert.throws(() => validateRuntimePolicy({ ...policy, supportedMajorLines: [24, 24] }), (error) => error.code === 'INVALID_RUNTIME_POLICY');
+});
+
+test('Node 25 compatível não aciona instalação automática da linha 24', async () => {
+  const root = await projectFixture();
+  try {
+    const mock = runtimeRunner({ version: 'v25.8.2', winget: true });
+    const result = await bootstrapEnvironment({ projectRoot: root, policy, commandRunner: mock.runner, authorizeNodeInstall: async () => { throw new Error('não deveria instalar Node 24'); } });
+    assert.equal(result.ok, true);
+    assert.equal(result.runtime.preferred, false);
+    assert.match(result.message, /compatível/);
+    assert.equal(mock.calls.some(([command]) => command === 'winget.exe'), false);
+  } finally { await rm(root, { recursive: true, force: true }); }
 });
 
 test('dependências válidas são reconhecidas e inconsistência/ausência é reportada', async () => {
@@ -105,7 +124,7 @@ test('Node não homologado falha fechado e instalação autorizada valida versã
     const rejected = runtimeRunner({ version: 'v26.0.0', winget: false });
     const blocked = await bootstrapEnvironment({ projectRoot: root, policy, commandRunner: rejected.runner, authorizeNodeInstall: async () => true });
     assert.equal(blocked.ok, false);
-    assert.equal(blocked.code, 'NODE_MAJOR_NOT_HOMOLOGATED');
+    assert.equal(blocked.code, 'NODE_MAJOR_NOT_SUPPORTED');
 
     const install = runtimeRunner({ version: 'v26.0.0', winget: true });
     let nodeCalls = 0;

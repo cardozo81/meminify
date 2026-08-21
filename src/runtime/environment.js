@@ -70,7 +70,7 @@ async function validateNodeAndNpm(commandRunner, policy) {
     if (result.code === 0 && parseNpmVersion(result.stdout)) { npm = { command: npmCommand, version: result.stdout.trim() }; break; }
   }
   if (!npm) return { valid: false, code: 'NPM_INVALID', message: 'npm.cmd não foi encontrado ou sua versão não pôde ser validada.', nodeCommand: node.command, version: runtime.version };
-  return { valid: true, nodeCommand: node.command, version: runtime.version, npmCommand: npm.command, npmVersion: npm.version };
+  return { valid: true, nodeCommand: node.command, version: runtime.version, preferred: runtime.preferred, channel: runtime.channel, message: runtime.message, npmCommand: npm.command, npmVersion: npm.version };
 }
 
 export async function bootstrapEnvironment({
@@ -104,5 +104,5 @@ export async function bootstrapEnvironment({
   }
   const packagedRuntime = await validatePackagedRuntimeCapabilities({ projectRoot, dependencies, runtime, commandRunner });
   if (!packagedRuntime.valid) return { ok: false, ...packagedRuntime, runtime, dependencies };
-  return { ok: true, runtime, dependencies, installed: false, message: 'Ambiente: OK' };
+  return { ok: true, runtime, dependencies, installed: false, message: runtime.message };
 }

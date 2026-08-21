@@ -41,9 +41,9 @@ A interface deve apresentar separadamente o risco do perfil, o risco estimado da
 
 ## Política de runtime Node.js
 
-Node.js é o runtime. Somente linhas LTS homologadas podem ser aceitas; a linha Current não é aceita automaticamente. As versões LTS exatas ainda dependem de decisão registrada em `15-DECISOES.md`.
+Node.js é o runtime. A política explícita em `resources/runtime-policy.json` exige major mínima 24 e aceita somente as linhas listadas: Node.js 24.x (LTS preferida) e 25.x (suportada, não preferencial e não-LTS). Majors futuras não listadas falham fechado.
 
-A política de runtime homologada fica em `resources/runtime-policy.json`: as linhas major 24 e 22 são aceitas, a linha 24 é preferida e a instalação automática aprovada é exatamente `24.19.0` pelo pacote winget `OpenJS.NodeJS.LTS`. Linhas Current, EOL ou não homologadas falham fechado.
+A instalação automática aprovada permanece exatamente `24.19.0` pelo pacote winget `OpenJS.NodeJS.LTS`. Um Node.js 25.x já compatível é utilizado sem substituição automática pela linha 24. Instalação só é oferecida quando o runtime está ausente ou não suportado, sempre com autorização explícita.
 
 O bootstrap conceitual é:
 

@@ -1,7 +1,9 @@
 {
-  "formatVersion": 1,
-  "homologatedMajorLines": [24, 22],
+  "formatVersion": 2,
+  "minimumMajor": 24,
+  "supportedMajorLines": [24, 25],
   "preferredMajor": 24,
+  "preferredChannel": "LTS",
   "approvedAutomaticInstallVersion": "24.19.0",
   "wingetPackage": "OpenJS.NodeJS.LTS"
 }

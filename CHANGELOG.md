@@ -2,6 +2,12 @@
 
 ## Não lançado
 
+### 0.1.2
+
+- Compatibilidade explícita com Node.js 25.x, incluindo validação de Node.js 25.8.2.
+- Política de runtime com major mínima 24 e bloqueio de majors futuras não listadas.
+- Node.js 24.x permanece a linha LTS preferida; Node.js 25.x compatível não aciona instalação automática da linha 24.
+
 ### 0.1.1
 
 - Preparação explícita e segura das dependências locais ausentes ou divergentes durante `publicar.cmd`, com revalidação e continuação automática.
