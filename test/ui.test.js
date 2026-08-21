@@ -7,7 +7,7 @@ test('UI explicita cancelamento, entrada inválida e recursos indisponíveis', a
   assert.match(source, /Opção inválida; nenhuma ação foi executada/);
   assert.match(source, /Execução cancelada; nenhum arquivo foi alterado/);
   assert.match(source, /Backups e restauração ainda não disponível/);
-  assert.match(source, /Relatórios ainda não disponível/);
-  assert.match(source, /Visualizador de logs técnicos ainda não disponível/);
+  assert.match(source, /Nenhum relatório operacional disponível/);
+  assert.match(source, /Nenhum log técnico disponível/);
   assert.match(source, /Invoke-MeminifyBridge/);
 });

@@ -85,6 +85,14 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `src/app/ui.ps1` | Menu PowerShell, apresentação pt-BR, ajustes temporários e confirmações | `src/app/bridge.mjs` |
 | `Executar.ps1` | Bootstrap validado e abertura do menu interativo | `src/bootstrap/cli.mjs`, `src/app/ui.ps1` |
 
+## Observabilidade
+
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `src/observability/index.mjs` | Logs técnicos UTF-8, relatórios operacionais TXT/CSV e leitura/listagem read-only | Resultados de análise/execução, Node.js `fs/promises` |
+| `test/observability.test.js` | Testes focados de logs, relatórios, CSV, falhas, recuperação e leitura read-only | `src/observability/index.mjs`, bridge |
+| `test/ui.test.js` | Validação textual mínima dos fluxos PowerShell de listagem, cancelamento e indisponibilidade | `src/app/ui.ps1` |
+
 ## Qualidade e testes
 
 | Arquivo | Responsabilidade | Dependências relevantes |
@@ -98,4 +106,4 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/execution.test.js` | Testes focados de pré-análise, write-ahead, conflitos, execução, rollback e interrupção | `node:test`, módulos de execução |
 | `test/runtime.test.js` | Testes focados de política Node, package/lock, dependências e bootstrap sem instalação real | `node:test`, módulos runtime |
 
-Restauração manual, relatórios, visualizador de logs, análise final de risco e distribuição ainda não existem; não são representados como placeholders neste mapa.
+Restauração manual, retenção automática, análise final de risco e distribuição ainda não existem; não são representados como placeholders neste mapa.

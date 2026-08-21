@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import { deriveEffectiveConfiguration, loadConfiguration } from '../configuration/index.js';
 import { createDefaultMinifierRegistry } from '../minifiers/index.js';
 import { createExecutionPlan, executePlan } from '../execution/index.js';
+import { listArtifacts, readArtifact, writeOperationalReports, writeTechnicalLog } from '../observability/index.mjs';
 
 const configurationDirectory = 'Configuracao';
 const configurationName = 'configuracao.ini';
@@ -74,6 +75,19 @@ function adjustmentsFrom(request) {
   return request.adjustments && typeof request.adjustments === 'object' ? request.adjustments : {};
 }
 
+async function persistArtifacts({ projectRoot, plan, result = null, resultStatus = null, error = null, startedAt, phases = [] }) {
+  const artifacts = {};
+  const failures = [];
+  try {
+    artifacts.reports = await writeOperationalReports({ projectRoot, plan, result, resultStatus, durationMs: Math.round(performance.now() - startedAt) });
+  } catch (cause) { failures.push({ code: 'REPORT_WRITE_FAILED', message: cause.message }); }
+  try {
+    artifacts.log = await writeTechnicalLog({ projectRoot, executionId: plan.executionId, phases, result, error, technicalPaths: plan.runtimePaths, runtime: { node: process.version } });
+  } catch (cause) { failures.push({ code: 'LOG_WRITE_FAILED', message: cause.message }); }
+  if (failures.length) artifacts.diagnostics = failures;
+  return artifacts;
+}
+
 async function createPlan(request, persistent) {
   const registry = createDefaultMinifierRegistry();
   const effective = deriveEffectiveConfiguration(persistent.configuration, adjustmentsFrom(request), { allowedEngines: new Set(registry.list().map((item) => item.id)) });
@@ -91,6 +105,14 @@ async function createPlan(request, persistent) {
 
 export async function runBridgeRequest(request, { projectRoot = process.cwd() } = {}) {
   const persistent = await loadPersistent(projectRoot);
+  if (request.command === 'list-artifacts') {
+    try { return { ok: true, kind: request.kind, names: await listArtifacts(projectRoot, request.kind) }; }
+    catch (error) { return { ok: false, diagnostic: diagnostic(error) }; }
+  }
+  if (request.command === 'read-artifact') {
+    try { return { ok: true, kind: request.kind, name: request.name, content: await readArtifact(projectRoot, request.kind, request.name) }; }
+    catch (error) { return { ok: false, diagnostic: diagnostic(error) }; }
+  }
   if (request.command === 'summary') {
     return { ok: true, configuration: persistent.ok ? persistent.configuration : null, ...persistent, projectRoot: resolve(projectRoot) };
   }
@@ -110,17 +132,32 @@ export async function runBridgeRequest(request, { projectRoot = process.cwd() } 
   persistent.projectRoot = resolve(projectRoot);
   try {
     if (request.command === 'analyze') {
+      const startedAt = performance.now();
       const { plan } = await createPlan(request, persistent);
-      return { ok: true, analysis: summarizePlan(plan) };
+      const analysis = summarizePlan(plan);
+      const artifacts = await persistArtifacts({ projectRoot, plan, resultStatus: 'analisado', startedAt, phases: [{ name: 'pré-análise', status: plan.status }] });
+      return { ok: true, analysis, artifacts };
     }
     if (request.command === 'execute') {
-      const { plan, minifier } = await createPlan(request, persistent);
-      const result = await executePlan(plan, minifier, {
-        confirmed: request.confirmed === true,
-        authorizeOverwriteConflicts: request.authorizeOverwriteConflicts === true,
-        meminifyVersion: request.meminifyVersion ?? null,
-      });
-      return { ok: true, plan: summarizePlan(plan), result };
+      const startedAt = performance.now();
+      let plan = null;
+      try {
+        const created = await createPlan(request, persistent);
+        plan = created.plan;
+        const result = await executePlan(plan, created.minifier, {
+          confirmed: request.confirmed === true,
+          authorizeOverwriteConflicts: request.authorizeOverwriteConflicts === true,
+          meminifyVersion: request.meminifyVersion ?? null,
+        });
+        const artifacts = await persistArtifacts({ projectRoot, plan, result, resultStatus: result.status, startedAt, phases: [{ name: 'execução', status: result.status }] });
+        return { ok: true, plan: summarizePlan(plan), result, artifacts };
+      } catch (error) {
+        const executionStatus = error.code === 'RECOVERY_REQUIRED'
+          ? 'recovery-required'
+          : (error.details?.rollbackStatus === 'rolled-back' ? 'falha (rollback comprovado)' : 'falha');
+        const artifacts = plan ? await persistArtifacts({ projectRoot, plan, resultStatus: executionStatus, error, startedAt, phases: [{ name: 'execução', status: executionStatus, code: error.code }] }) : {};
+        return { ok: false, diagnostic: diagnostic(error), artifacts };
+      }
     }
     return { ok: false, code: 'UNKNOWN_COMMAND', message: `Comando não suportado: ${request.command ?? '(vazio)'}.` };
   } catch (error) {

@@ -53,6 +53,21 @@ function Invoke-Analyze {
     return $response.analysis
 }
 
+function Show-Artefatos {
+    param([ValidateSet('reports', 'logs')][string]$Kind)
+    $response = Invoke-MeminifyBridge @{ command = 'list-artifacts'; kind = $Kind }
+    if (-not $response.ok) { Show-Mensagem "Erro: $($response.diagnostic.message)" Red; return }
+    if ($response.names.Count -eq 0) { Show-Mensagem $(if ($Kind -eq 'reports') { 'Nenhum relatório operacional disponível.' } else { 'Nenhum log técnico disponível.' }) Yellow; return }
+    Show-Mensagem $(if ($Kind -eq 'reports') { 'Relatórios operacionais:' } else { 'Logs técnicos:' }) Cyan
+    for ($index = 0; $index -lt $response.names.Count; $index++) { Write-Host "$($index + 1). $($response.names[$index])" }
+    $selected = (Read-Host 'Número para visualizar; Enter cancela').Trim()
+    if (-not $selected) { Show-Mensagem 'Visualização cancelada.' Yellow; return }
+    $number = 0
+    if (-not [int]::TryParse($selected, [ref]$number) -or $number -lt 1 -or $number -gt $response.names.Count) { Show-Mensagem 'Seleção inválida; nenhum arquivo foi alterado.' Yellow; return }
+    $content = Invoke-MeminifyBridge @{ command = 'read-artifact'; kind = $Kind; name = $response.names[$number - 1] }
+    if ($content.ok) { Show-Mensagem "`n$($content.content)" White } else { Show-Mensagem "Erro: $($content.diagnostic.message)" Red }
+}
+
 function Start-MeminifyUi {
     $script:TemporaryAdjustments = @{}
     while ($true) {
@@ -93,8 +108,8 @@ function Start-MeminifyUi {
                     } else { Show-Mensagem "Erro de configuração: $($summary.diagnostic.message)" Red }
                 }
                 '5' { Show-Mensagem 'Backups e restauração ainda não disponível.' Yellow }
-                '6' { Show-Mensagem 'Relatórios ainda não disponível.' Yellow }
-                '7' { Show-Mensagem 'Visualizador de logs técnicos ainda não disponível.' Yellow }
+                '6' { Show-Artefatos reports }
+                '7' { Show-Artefatos logs }
                 '0' { return }
                 default { Show-Mensagem 'Opção inválida; nenhuma ação foi executada.' Yellow }
             }
