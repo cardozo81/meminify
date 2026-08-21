@@ -1,0 +1,14 @@
+node_modules/
+dist/
+
+Dados/
+_source_versions/
+Configuracao/configuracao.ini
+
+Logs/
+Relatorios/
+*.log
+*.tmp
+
+.DS_Store
+Thumbs.db
