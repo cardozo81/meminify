@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "engines": [
+    {
+      "id": "esbuild",
+      "name": "esbuild",
+      "version": "0.28.2",
+      "package": "esbuild",
+      "supportedTypes": ["javascript", "css"],
+      "homologated": true
+    }
+  ]
+}

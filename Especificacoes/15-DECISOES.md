@@ -14,7 +14,7 @@
 - O desenvolvimento é incremental, assistido por IA e realizado diretamente em `main`, sem branch por tarefa e sem pull request no fluxo atual.
 - Testes são focados, proporcionais e introduzidos junto com os comportamentos.
 - Commits e pushes representam checkpoints significativos e validados, não microalterações.
-- A dependência `ini` foi introduzida na versão exata `7.0.0` e está bloqueada no lockfile; versões futuras são selecionadas quando cada dependência for introduzida e devem permanecer reproduzíveis.
+- As dependências `ini@7.0.0` e `esbuild@0.28.2` foram introduzidas em versões exatas e estão bloqueadas no lockfile; versões futuras são selecionadas quando cada dependência for introduzida e devem permanecer reproduzíveis.
 
 Os detalhes normativos de cada decisão pertencem aos documentos temáticos indicados por `_ias/INDEX.md`.
 
