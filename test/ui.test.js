@@ -11,4 +11,7 @@ test('UI explicita cancelamento, entrada inválida e recursos indisponíveis', a
   assert.match(source, /Nenhum relatório operacional disponível/);
   assert.match(source, /Nenhum log técnico disponível/);
   assert.match(source, /Invoke-MeminifyBridge/);
+  assert.match(source, /StandardInput\.BaseStream/);
+  const bytes = await readFile(new URL('../src/app/ui.ps1', import.meta.url));
+  assert.deepEqual([...bytes.subarray(0, 3)], [0xEF, 0xBB, 0xBF]);
 });

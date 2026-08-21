@@ -1,11 +1,28 @@
-function Invoke-MeminifyBridge {
+﻿function Invoke-MeminifyBridge {
     param([hashtable]$Request)
     $json = $Request | ConvertTo-Json -Depth 30 -Compress
-    $result = $json | & $script:NodeExecutable $script:BridgePath 2>$null
-    if ($LASTEXITCODE -ne 0 -and [string]::IsNullOrWhiteSpace(($result -join ''))) {
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startInfo.FileName = $script:NodeExecutable
+    $startInfo.Arguments = '"' + $script:BridgePath.Replace('"', '\"') + '" --bridge'
+    $startInfo.WorkingDirectory = Split-Path -Parent $script:BridgePath
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardInput = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $startInfo
+    [void]$process.Start()
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+    $process.StandardInput.BaseStream.Write($bytes, 0, $bytes.Length)
+    $process.StandardInput.Close()
+    $result = $process.StandardOutput.ReadToEnd()
+    $errorOutput = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
+    if ($process.ExitCode -ne 0 -and [string]::IsNullOrWhiteSpace($result)) {
         return [pscustomobject]@{ ok = $false; diagnostic = [pscustomobject]@{ code = 'BRIDGE_FAILED'; message = 'A aplicação Node não retornou uma resposta estruturada.' } }
     }
-    try { return (($result -join [Environment]::NewLine) | ConvertFrom-Json) }
+    try { return ($result | ConvertFrom-Json) }
     catch { return [pscustomobject]@{ ok = $false; diagnostic = [pscustomobject]@{ code = 'INVALID_BRIDGE_RESPONSE'; message = 'A resposta da aplicação Node é inválida.' } } }
 }
 

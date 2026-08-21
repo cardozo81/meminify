@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { execFile } from 'node:child_process';
+import { copyFile, cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -12,7 +12,7 @@ const execFileAsync = promisify(execFile);
 const projectRoot = resolve(new URL('..', import.meta.url).pathname.replace(/^\/(.:)/, '$1'));
 
 async function fixture() {
-  const root = await mkdtemp(join(tmpdir(), 'meminify-package-'));
+  const root = await mkdtemp(join(tmpdir(), 'Meminify 13C package '));
   for (const file of await collectAllowedFiles(projectRoot)) {
     const source = join(projectRoot, ...file.split('/'));
     const destination = join(root, ...file.split('/'));
@@ -20,6 +20,19 @@ async function fixture() {
     await copyFile(source, destination);
   }
   return root;
+}
+
+function runProcess(file, args, { cwd, input = '' } = {}) {
+  return new Promise((resolveProcess, reject) => {
+    const child = spawn(file, args, { cwd, windowsHide: true });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    child.on('error', reject);
+    child.on('close', (code) => resolveProcess({ code, stdout, stderr }));
+    if (input) child.stdin.end(input);
+  });
 }
 
 test('nomes de artefato derivam da versão e allowlist contém somente runtime necessário', async () => {
@@ -36,6 +49,8 @@ test('nomes de artefato derivam da versão e allowlist contém somente runtime n
   assert.match(launcher, /powershell\.exe -NoProfile -File/i);
   assert.doesNotMatch(launcher, /ExecutionPolicy\s+Bypass/i);
   assert.doesNotMatch(launcher, /[A-Za-z]:\\(?:Users|IA-PROJETOS)\\/i);
+  const powershellBytes = await readFile(join(projectRoot, 'Executar.ps1'));
+  assert.deepEqual([...powershellBytes.subarray(0, 3)], [0xEF, 0xBB, 0xBF]);
   const readme = await readFile(join(projectRoot, 'LEIA-ME.txt'), 'utf8');
   for (const guidance of ['Executar.cmd', 'configuracao.ini.example', 'Ajustar somente esta execução', 'Dados\\Relatorios']) assert.match(readme, new RegExp(guidance.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
@@ -55,9 +70,36 @@ test('montagem valida documentação e falha com obrigatório ausente ou proibid
     await writeFile(join(metadata.packageRoot, 'LEIA-ME.txt'), 'C:\\Users\\pessoa\\segredo', 'utf8');
     await assert.rejects(validatePackagedTree({ projectRoot: root, packageRoot: metadata.packageRoot, version: metadata.version }), /Conteúdo local/);
     await copyFile(join(root, 'LEIA-ME.txt'), join(metadata.packageRoot, 'LEIA-ME.txt'));
-    await writeFile(join(metadata.packageRoot, 'LEIA-ME.txt'), 'configuração minificação execução usuário não restauração relatório Ã§', 'utf8');
+    await writeFile(join(metadata.packageRoot, 'LEIA-ME.txt'), `configuração minificação execução usuário não restauração relatório ${String.fromCharCode(0xC3, 0xA7)}`, 'utf8');
     await assert.rejects(validatePackagedTree({ projectRoot: root, packageRoot: metadata.packageRoot, version: metadata.version }), /Mojibake confirmado/);
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('pacote isolado resolve versão e inicia fora do repositório em caminho com espaços', async () => {
+  const root = await fixture();
+  const cwd = await mkdtemp(join(tmpdir(), 'Meminify 13C cwd '));
+  const failureRoot = await mkdtemp(join(tmpdir(), 'Meminify 13C failure '));
+  try {
+    const metadata = await assemblePackage(root);
+    await cp(join(projectRoot, 'node_modules'), join(metadata.packageRoot, 'node_modules'), { recursive: true });
+    const request = await runProcess(process.execPath, [join(metadata.packageRoot, 'src', 'app', 'bridge.mjs'), '--bridge'], { cwd, input: '{"command":"version"}' });
+    assert.equal(request.code, 0);
+    assert.equal(JSON.parse(request.stdout).version, '0.1.0');
+    const powershell = 'C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+    const startup = await runProcess(powershell, ['-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File', join(metadata.packageRoot, 'Executar.ps1')], { cwd, input: '0\r\n' });
+    assert.equal(startup.code, 0);
+    assert.match(startup.stdout, /MEMINIFY v0\.1\.0/);
+    const powershellMojibake = String.fromCharCode(0x00C3, 0x0192, 0x00C2, 0x00A0);
+    assert.doesNotMatch(`${startup.stdout}${startup.stderr}`, new RegExp(powershellMojibake));
+    await copyFile(join(root, 'Executar.cmd'), join(failureRoot, 'Executar.cmd'));
+    const failure = await runProcess('cmd.exe', ['/d', '/c', 'Executar.cmd'], { cwd: failureRoot, input: '\r\n' });
+    assert.equal(failure.code, 1);
+    assert.match(failure.stdout, /não foi possível iniciar|encerrado com erro/i);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(cwd, { recursive: true, force: true });
+    await rm(failureRoot, { recursive: true, force: true });
+  }
 });
 
 test('ZIP contém raiz esperada e checksum SHA-256 corresponde', async () => {

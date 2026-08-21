@@ -1,4 +1,5 @@
 import { access, copyFile, mkdir, readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { constants } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { deriveEffectiveConfiguration, loadConfiguration } from '../configuration/index.js';
@@ -203,7 +204,7 @@ export async function runBridgeRequest(request, { projectRoot = process.cwd() } 
 
 if (process.argv[2] === '--bridge') {
   let request = {};
-  try { request = JSON.parse(await readFile(0, 'utf8')); } catch (error) {
+  try { request = JSON.parse(readFileSync(0, 'utf8')); } catch (error) {
     console.log(JSON.stringify({ ok: false, diagnostic: { code: 'INVALID_REQUEST', message: 'A requisição JSON é inválida.' } }));
     process.exitCode = 2;
   }

@@ -29,6 +29,10 @@ Os detalhes normativos de cada decisão pertencem aos documentos temáticos indi
 - A política segue SemVer; a versão pré-1.0 atual é `0.1.0`, derivada exclusivamente de `package.json`, formando pasta, ZIP, checksum, futura tag `v<version>` e futuro GitHub Release.
 - Tags são imutáveis; uma publicação futura reutiliza exatamente os artefatos validados, e a distribuição gerada permanece fora do Git.
 
+## Convenção de encoding do PowerShell
+
+Scripts PowerShell (`.ps1`/`.psm1`) executados pelo Windows PowerShell usam UTF-8 com BOM para interpretação confiável de pt-BR; Node.js, JSON, Markdown e demais formatos seguem sua codificação UTF-8 apropriada.
+
 ## Pendentes
 
 As seguintes decisões permanecem deliberadamente sem valor inventado. A área futura indicada orienta a próxima consolidação:

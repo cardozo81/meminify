@@ -6,4 +6,10 @@ if not exist "%SCRIPT%" (
   exit /b 1
 )
 powershell.exe -NoProfile -File "%SCRIPT%"
-exit /b %ERRORLEVEL%
+set "EXITCODE=%ERRORLEVEL%"
+if not "%EXITCODE%"=="0" (
+  echo.
+  echo O Meminify foi encerrado com erro. Codigo: %EXITCODE%
+  pause
+)
+exit /b %EXITCODE%
