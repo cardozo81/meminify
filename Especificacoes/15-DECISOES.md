@@ -18,6 +18,7 @@
 - A seleção de padrões do scanner usa `micromatch@4.0.8`, fixada exatamente no manifesto e lockfile.
 - O diretório temporário interno do runtime é `Dados\Temporarios\` e permanece uma exclusão técnica obrigatória do scanner.
 - O rastreamento resistente a interrupções usa journal JSON UTF-8 write-ahead em `Dados\Restauracao\ultima-execucao.bkp`, persistido por temporário durável e `rename` antes das mutações registradas.
+- O runtime Node.js homologa as linhas major 24 e 22, prefere 24 e autoriza instalação automática somente da versão `24.19.0` pelo pacote winget `OpenJS.NodeJS.LTS`; chamadas npm no PowerShell usam `npm.cmd`.
 
 Os detalhes normativos de cada decisão pertencem aos documentos temáticos indicados por `_ias/INDEX.md`.
 
@@ -27,7 +28,6 @@ As seguintes decisões permanecem deliberadamente sem valor inventado. A área f
 
 - política de retenção automática de backups — recuperação e backup;
 - políticas de retenção automática de logs e relatórios — logs e relatórios;
-- linhas e versões exatas de Node.js LTS homologadas — runtime e bootstrap;
 - eventual limiar mínimo de redução para aceitar um resultado — minificação e qualidade;
 - opções detalhadas permitidas no perfil `Personalizado` — perfis e adaptadores;
 - versões exatas de futuras dependências — fase que introduzir cada dependência;

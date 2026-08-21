@@ -45,6 +45,9 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | Arquivo | Responsabilidade | Dependências relevantes |
 | --- | --- | --- |
 | `src/runtime/paths.js` | Caminhos técnicos normativos relativos ao runtime | Node.js `path` |
+| `src/runtime/policy.js` | Leitura e validação da política Node.js homologada | `resources/runtime-policy.json` |
+| `src/runtime/dependencies.js` | Validação de package/lock e dependências locais | Node.js `fs/promises` |
+| `src/runtime/environment.js` | Descoberta/validação de Node/npm e instalação autorizada via winget | Node.js `child_process`, módulos runtime |
 | `src/integrity/errors.js` | Erros estruturados de integridade | Nenhuma |
 | `src/integrity/hash.js` | SHA-256 incremental de arquivos | Node.js `crypto`, `fs` |
 | `src/integrity/json-store.js` | Leitura UTF-8 estrita e persistência JSON por arquivo temporário e rename | Node.js built-ins |
@@ -66,6 +69,14 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `src/execution/executor.js` | Coordenação dos dois modos, minificação, estado, manifesto e rollback | Minificador, integridade e execução |
 | `src/execution/index.js` | API pública de pré-análise e execução transacional | Módulos de execução |
 
+## Bootstrap Windows
+
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `Executar.ps1` | Estabelece a raiz, oferece instalação autorizada quando Node falta e inicia o bootstrap Node | Windows PowerShell, `winget.exe` opcional |
+| `src/bootstrap/cli.mjs` | Entrada leve do bootstrap, mensagens pt-BR e handoff somente se existir menu futuro | Módulos runtime |
+| `resources/runtime-policy.json` | Política versionada de linhas e instalação Node homologadas | Especificação 07 |
+
 ## Qualidade e testes
 
 | Arquivo | Responsabilidade | Dependências relevantes |
@@ -77,5 +88,6 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/scanner.test.js` | Testes focados de recursão, glob, exclusões, links, readonly e deduplicação | `node:test`, módulos do scanner |
 | `test/integrity.test.js` | Testes focados de SHA-256, estado, manifesto, backup e diretório temporário | `node:test`, módulos de integridade |
 | `test/execution.test.js` | Testes focados de pré-análise, write-ahead, conflitos, execução, rollback e interrupção | `node:test`, módulos de execução |
+| `test/runtime.test.js` | Testes focados de política Node, package/lock, dependências e bootstrap sem instalação real | `node:test`, módulos runtime |
 
 Interface PowerShell, restauração manual, análise final de risco e distribuição ainda não existem; não são representados como placeholders neste mapa.

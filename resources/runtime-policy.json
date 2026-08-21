@@ -1,0 +1,7 @@
+{
+  "formatVersion": 1,
+  "homologatedMajorLines": [24, 22],
+  "preferredMajor": 24,
+  "approvedAutomaticInstallVersion": "24.19.0",
+  "wingetPackage": "OpenJS.NodeJS.LTS"
+}

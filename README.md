@@ -15,4 +15,4 @@ No fluxo atual, uma única pessoa trabalha diretamente na branch `main`. Git reg
 - [`_ias/MAPA-CODIGO.md`](_ias/MAPA-CODIGO.md): mapa evolutivo da implementação.
 - [`CHANGELOG.md`](CHANGELOG.md): alterações relevantes do projeto.
 
-Já existe a fundação de domínio/configuração, o adapter esbuild, o scanner read-only, a integridade por SHA-256 e a execução transacional dos dois modos com journal write-ahead e rollback comprovado. Restauração manual, interface PowerShell, análise final de risco e bootstrap ainda não estão implementados.
+Já existe a fundação de domínio/configuração, o adapter esbuild, o scanner read-only, a integridade por SHA-256, a execução transacional dos dois modos e o bootstrap Windows com política Node homologada. Restauração manual, menu PowerShell e análise final de risco ainda não estão implementados.

@@ -43,13 +43,13 @@ A interface deve apresentar separadamente o risco do perfil, o risco estimado da
 
 Node.js é o runtime. Somente linhas LTS homologadas podem ser aceitas; a linha Current não é aceita automaticamente. As versões LTS exatas ainda dependem de decisão registrada em `15-DECISOES.md`.
 
-A política de runtime planejada fica em `resources/runtime-policy.json`.
+A política de runtime homologada fica em `resources/runtime-policy.json`: as linhas major 24 e 22 são aceitas, a linha 24 é preferida e a instalação automática aprovada é exatamente `24.19.0` pelo pacote winget `OpenJS.NodeJS.LTS`. Linhas Current, EOL ou não homologadas falham fechado.
 
 O bootstrap conceitual é:
 
 `verificar Node` → `validar LTS homologada` → `validar npm` → `validar package/lock` → `validar dependências` → `carregar configuração` → `menu`
 
-Se Node.js estiver ausente e o winget estiver disponível, a instalação interativa de uma LTS aprovada pode ser oferecida. A instalação exige autorização explícita. Depois dela, o sistema deve redescobrir Node.js e `PATH` e validar o runtime; o código de saída do winget, isoladamente, não comprova sucesso.
+Se Node.js estiver ausente ou não homologado e o winget estiver disponível, a instalação interativa da versão aprovada pode ser oferecida. A instalação exige autorização explícita. Depois dela, o sistema redescobre Node.js e `PATH` e valida o runtime e o npm; o código de saída do winget, isoladamente, não comprova sucesso.
 
 ## Dependências
 
@@ -58,5 +58,6 @@ Se Node.js estiver ausente e o winget estiver disponível, a instalação intera
 - A instalação deve ser reproduzível.
 - Instalações globais são proibidas.
 - Não deve haver atualização automática para a versão mais recente.
+- Ao invocar npm a partir do PowerShell, deve ser usado `npm.cmd`, evitando interferência da política de execução de scripts.
 - A inicialização normal deve usar verificações leves.
 - A inicialização normal não consulta a internet, executa `npm ci`, atualiza Node.js ou atualiza esbuild a cada uso.

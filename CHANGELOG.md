@@ -10,3 +10,4 @@
 - Scanner read-only com seleção glob via micromatch, exclusões técnicas, classificação JS/CSS, diagnósticos de links/readonly e deduplicação.
 - Fundação de integridade com SHA-256 incremental, estado técnico, manifesto UTF-8 e backup de fontes validado por hash.
 - Pré-análise imutável e execução transacional dos dois modos, com journal write-ahead, conflitos globais, rollback exato e recuperação de interrupções.
+- Política Node.js homologada e bootstrap Windows leve, com instalação winget autorizada e validação reproduzível de npm/dependências.
