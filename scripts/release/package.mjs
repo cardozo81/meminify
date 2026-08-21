@@ -3,9 +3,9 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validatePackageLock, validateProjectDependencies } from '../../src/runtime/dependencies.js';
 import { loadRuntimePolicy, validateNodeRuntimeVersion } from '../../src/runtime/policy.js';
+import { loadApplicationMetadata } from '../../src/runtime/version.js';
 
 const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const VERSION_PATTERN = /^0\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 const FIXED_FILES = Object.freeze([
   'Executar.ps1',
   'package.json',
@@ -38,11 +38,10 @@ async function walk(directory, root = directory) {
 }
 
 export async function getPackageMetadata(projectRoot = scriptRoot) {
-  const packageJson = JSON.parse(await readFile(join(projectRoot, 'package.json'), 'utf8'));
-  if (typeof packageJson.version !== 'string' || !VERSION_PATTERN.test(packageJson.version)) throw new Error('package.json deve conter uma versão de desenvolvimento pre-1.0 válida.');
-  const packageName = `Meminify-${packageJson.version}`;
+  const { version } = await loadApplicationMetadata(projectRoot);
+  const packageName = `Meminify-${version}`;
   return Object.freeze({
-    version: packageJson.version,
+    version,
     packageName,
     distRoot: resolve(projectRoot, 'dist'),
     packageRoot: resolve(projectRoot, 'dist', packageName),

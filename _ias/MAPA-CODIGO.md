@@ -42,6 +42,8 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 
 ## Runtime e integridade
 
+| `src/runtime/version.js` | Leitura compartilhada da identidade e versão autoritativa do package.json | Node.js fs/promises |
+
 | Arquivo | Responsabilidade | Dependências relevantes |
 | --- | --- | --- |
 | `src/runtime/paths.js` | Caminhos técnicos normativos relativos ao runtime | Node.js `path` |
@@ -121,6 +123,8 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/packaging.test.js` | Testes de nomes versionados, allowlist, proibições, ZIP, checksum e limpeza segura | Módulo de empacotamento, PowerShell |
 
 ## Qualidade e testes
+
+| `test/version.test.js` | Testes de versão autoritativa e exposição na ponte/UI | node:test, runtime e bridge |
 
 | Arquivo | Responsabilidade | Dependências relevantes |
 | --- | --- | --- |

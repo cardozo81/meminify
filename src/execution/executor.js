@@ -48,6 +48,7 @@ function createJournal(plan) {
   return {
     formatVersion: 1,
     executionId: plan.executionId,
+    meminifyVersion: plan.meminifyVersion ?? null,
     timestamp: plan.timestamp,
     outputMode: plan.outputMode,
     status: 'planned',

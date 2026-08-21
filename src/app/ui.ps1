@@ -116,6 +116,12 @@ function Show-RestoreMenu {
 }
 
 function Start-MeminifyUi {
+    $identity = Invoke-MeminifyBridge @{ command = 'version' }
+    if (-not $identity.ok) { Show-Mensagem 'Não foi possível obter a versão do Meminify.' Red; return }
+    Write-Host "`nMEMINIFY v$($identity.version)" -ForegroundColor Cyan
+    $identity = Invoke-MeminifyBridge @{ command = 'version' }
+    if (-not $identity.ok) { Show-Mensagem 'Não foi possível obter a versão do Meminify.' Red; return }
+    Write-Host "`nMEMINIFY v$($identity.version)" -ForegroundColor Cyan
     $script:TemporaryAdjustments = @{}
     while ($true) {
         Write-Host "`n=== Meminify ===" -ForegroundColor Cyan

@@ -65,6 +65,7 @@ export async function createExecutionPlan({
   executionId,
   timestamp = new Date().toISOString(),
   riskAssessment = null,
+  meminifyVersion = null,
   scannerOptions = {},
 }) {
   if (!configuration || typeof executionId !== 'string' || !SAFE_EXECUTION_ID.test(executionId) || executionId === '.' || executionId === '..') {
@@ -187,6 +188,7 @@ export async function createExecutionPlan({
   return deepFreeze({
     formatVersion: 1,
     executionId,
+    meminifyVersion,
     timestamp,
     status: blockers.length === 0 ? 'ready' : 'blocked',
     outputMode: configuration.outputMode,

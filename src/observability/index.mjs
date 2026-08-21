@@ -69,7 +69,7 @@ function rowsFrom({ plan, result = null, status = null, durationMs = null, minif
   return rows;
 }
 
-function reportText({ plan, rows, resultStatus, durationMs }) {
+function reportText({ plan, rows, resultStatus, durationMs, applicationVersion }) {
   const minified = rows.filter((row) => row.status === 'minificado');
   const ignored = rows.filter((row) => row.status === 'ignorado');
   const errors = (plan.diagnostics?.errors?.length ?? 0) + (plan.diagnostics?.blockers?.length ?? 0);
@@ -78,6 +78,7 @@ function reportText({ plan, rows, resultStatus, durationMs }) {
   const red = reduction(original, final);
   const lines = [
     'Relatório operacional do Meminify',
+    `Versão do Meminify: ${applicationVersion ?? ''}`,
     `Status: ${resultStatus ?? plan.status}`,
     `ID da execução: ${plan.executionId}`,
     `Arquivos encontrados: ${rows.length}`,
@@ -116,7 +117,7 @@ async function uniquePath(directory, prefix, extension, timestamp) {
   }
 }
 
-export async function writeOperationalReports({ projectRoot, plan, result = null, resultStatus = null, durationMs = null, timestamp = new Date() }) {
+export async function writeOperationalReports({ projectRoot, plan, result = null, resultStatus = null, durationMs = null, applicationVersion = null, timestamp = new Date() }) {
   const directory = join(resolve(projectRoot), 'Dados', 'Relatorios');
   await mkdir(directory, { recursive: true });
   const rows = rowsFrom({ plan, result, status: resultStatus, durationMs, minificationDate: timestamp.toISOString() });
@@ -125,19 +126,20 @@ export async function writeOperationalReports({ projectRoot, plan, result = null
   const txtPath = await uniquePath(directory, 'execucao', 'txt', fileStamp);
   const csvPath = await uniquePath(directory, 'execucao', 'csv', fileStamp);
   await import('node:fs/promises').then(({ writeFile }) => Promise.all([
-    writeFile(txtPath, reportText({ plan, rows, resultStatus, durationMs }), 'utf8'),
+    writeFile(txtPath, reportText({ plan, rows, resultStatus, durationMs, applicationVersion }), 'utf8'),
     writeFile(csvPath, reportCsv(rows), 'utf8'),
   ]));
   return { txtPath, csvPath, rows };
 }
 
-export async function writeTechnicalLog({ projectRoot, executionId, phases = [], result = null, error = null, technicalPaths = {}, runtime = null, timestamp = new Date() }) {
+export async function writeTechnicalLog({ projectRoot, executionId, phases = [], result = null, error = null, technicalPaths = {}, runtime = null, applicationVersion = null, timestamp = new Date() }) {
   const directory = join(resolve(projectRoot), 'Dados', 'Logs');
   await mkdir(directory, { recursive: true });
   const path = await uniquePath(directory, 'tecnico', 'log', stamp(timestamp));
   const lines = [
     `Meminify técnico | data=${timestamp.toISOString()}`,
     `executionId=${executionId ?? ''}`,
+    `version=${applicationVersion ?? ''}`,
     `runtime=${JSON.stringify(runtime ?? {})}`,
     `paths=${JSON.stringify(technicalPaths)}`,
     ...phases.map((phase) => `phase=${JSON.stringify(phase)}`),

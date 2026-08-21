@@ -50,6 +50,10 @@ Meminify-<version>\
 
 O checksum usa SHA-256 em texto convencional: hash hexadecimal minúsculo, dois espaços e o nome do ZIP.
 
+## Identidade de versão
+
+`package.json` é a fonte única da versão SemVer. A identidade validada mantém a invariância `package.json.version = Meminify-<version> = Meminify-<version>.zip = Meminify-<version>.zip.sha256 = futura tag v<version> = futura versão do GitHub Release`. A futura publicação deve reutilizar exatamente o ZIP e o checksum validados localmente. Tags publicadas são imutáveis; conteúdo alterado exige nova versão. Esta tarefa não cria tag nem release.
+
 ## Exclusões da distribuição
 
 O pacote não deve incluir conteúdo exclusivo de desenvolvimento ou dados locais, incluindo:
