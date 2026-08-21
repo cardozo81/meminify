@@ -56,3 +56,9 @@ O desenvolvimento ocorre diretamente em `main`, com commits validados e allowlis
 ## Documentação offline
 
 As fontes autoritativas ficam em `Documentacao\Fonte`. Execute `npm.cmd run build:docs` para gerar HTML local em `Documentacao\Gerada`. O build não acessa a rede, não modifica o Markdown e usa `Documentacao\Assets\manual.css`; o HTML gerado não substitui as fontes Markdown nem as especificações.
+
+## Empacotamento local
+
+`publicar.cmd` delega para `scripts\release\publicar.ps1`. O pipeline valida ambiente, versão `package.json`, package/lock, dependências, UTF-8, testes e documentação antes de montar uma allowlist em `dist\Meminify-<version>`. Em seguida valida o conteúdo, cria um ZIP com uma única raiz versionada e grava o SHA-256 correspondente.
+
+O pacote inclui launcher, manifestos npm, `src`, `resources`, modelo de configuração e HTML offline. Exclui testes, especificações, `_ias`, scripts de desenvolvimento, dados locais, configuração pessoal, backups, `node_modules` e `dist` anterior. O empacotamento não publica GitHub Release.

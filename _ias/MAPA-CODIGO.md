@@ -111,6 +111,15 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `scripts/docs/build-docs.mjs` | Build HTML offline determinístico para os dois manuais | Node.js `fs/promises` |
 | `test/docs.test.js` | Testes focados de geração HTML, UTF-8 e ausência de dependência externa | Build de documentação |
 
+## Empacotamento local
+
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `publicar.cmd` | Launcher fino do empacotamento local | Windows CMD, `scripts/release/publicar.ps1` |
+| `scripts/release/publicar.ps1` | Orquestra gates, montagem, ZIP e checksum SHA-256 | Node.js, npm.cmd, Compress-Archive |
+| `scripts/release/package.mjs` | Autoridade testável de versão, allowlist, montagem e validação do pacote | Runtime, Node.js built-ins |
+| `test/packaging.test.js` | Testes de nomes versionados, allowlist, proibições, ZIP, checksum e limpeza segura | Módulo de empacotamento, PowerShell |
+
 ## Qualidade e testes
 
 | Arquivo | Responsabilidade | Dependências relevantes |
@@ -124,4 +133,4 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/execution.test.js` | Testes focados de pré-análise, write-ahead, conflitos, execução, rollback e interrupção | `node:test`, módulos de execução |
 | `test/runtime.test.js` | Testes focados de política Node, package/lock, dependências e bootstrap sem instalação real | `node:test`, módulos runtime |
 
-Retenção automática, análise final de risco e distribuição ainda não existem; não são representados como placeholders neste mapa.
+Retenção automática, análise final de risco e publicação de GitHub Release ainda não existem; não são representadas como placeholders neste mapa.

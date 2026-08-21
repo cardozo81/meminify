@@ -19,6 +19,8 @@
 - O diretório temporário interno do runtime é `Dados\Temporarios\` e permanece uma exclusão técnica obrigatória do scanner.
 - O rastreamento resistente a interrupções usa journal JSON UTF-8 write-ahead em `Dados\Restauracao\ultima-execucao.bkp`, persistido por temporário durável e `rename` antes das mutações registradas.
 - O runtime Node.js homologa as linhas major 24 e 22, prefere 24 e autoriza instalação automática somente da versão `24.19.0` pelo pacote winget `OpenJS.NodeJS.LTS`; chamadas npm no PowerShell usam `npm.cmd`.
+- A versão inicial de desenvolvimento é `0.1.0`, com `package.json` como autoridade única; nomes de pasta, ZIP e checksum são derivados dessa versão.
+- O pacote local usa uma raiz `Meminify-<version>` e allowlist de launcher, manifestos npm, módulos `src`, recursos, modelo de configuração e documentação HTML gerada, sem `node_modules` nem conteúdo de desenvolvimento/local.
 
 Os detalhes normativos de cada decisão pertencem aos documentos temáticos indicados por `_ias/INDEX.md`.
 
@@ -31,7 +33,6 @@ As seguintes decisões permanecem deliberadamente sem valor inventado. A área f
 - eventual limiar mínimo de redução para aceitar um resultado — minificação e qualidade;
 - opções detalhadas permitidas no perfil `Personalizado` — perfis e adaptadores;
 - versões exatas de futuras dependências — fase que introduzir cada dependência;
-- layout final detalhado do pacote de distribuição — distribuição;
 - método detalhado para calcular o risco estimado de uma execução — UX e análise de risco.
 
 Esses pontos exigem decisão explícita em tarefa futura. Nenhum padrão, fallback ou valor deve ser inferido enquanto permanecerem pendentes.

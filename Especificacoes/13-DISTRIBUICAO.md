@@ -26,6 +26,30 @@ O empacotamento local futuro deve bloquear em qualquer prova insuficiente e perc
 
 Artefatos gerados ficam em `dist\`.
 
+## Layout aprovado do pacote local
+
+`package.json` é a autoridade única de versão. O pacote usa a raiz versionada `dist\Meminify-<version>\` e gera `dist\Meminify-<version>.zip` e `dist\Meminify-<version>.zip.sha256`.
+
+A montagem usa allowlist e preserva os caminhos relativos do runtime:
+
+```text
+Meminify-<version>\
+  Executar.ps1
+  package.json
+  package-lock.json
+  README.md
+  CHANGELOG.md
+  Configuracao\configuracao.ini.example
+  src\
+  resources\
+  Documentacao\Gerada\Manual-Usuario\index.html
+  Documentacao\Gerada\Manual-Tecnico\index.html
+```
+
+`src\` contém somente módulos JavaScript, MJS e PowerShell; `resources\` contém somente JSON requerido pelo runtime. `node_modules` não é distribuído: o bootstrap usa os manifestos bloqueados para instalação local reproduzível quando necessária. O ZIP contém exatamente uma raiz `Meminify-<version>/`.
+
+O checksum usa SHA-256 em texto convencional: hash hexadecimal minúsculo, dois espaços e o nome do ZIP.
+
 ## Exclusões da distribuição
 
 O pacote não deve incluir conteúdo exclusivo de desenvolvimento ou dados locais, incluindo:
@@ -45,4 +69,4 @@ A composição final deve ser construída em destino limpo e validada antes da c
 
 Empacotamento local e publicação de GitHub Release são operações independentes. A automação futura de GitHub Release não pode ser incorporada ao processo que gera o pacote local.
 
-O layout final detalhado e as versões exatas das dependências permanecem pendentes em `15-DECISOES.md`.
+Versões exatas de dependências futuras continuam sendo decididas quando cada dependência for introduzida.

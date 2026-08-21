@@ -51,5 +51,8 @@ a { color: #005a9c; }
 <p>O desenvolvimento ocorre diretamente em <code>main</code>, com commits validados e allowlist explícita de arquivos ao preparar um checkpoint. Não use <code>git add .</code>, force-push, fallback silencioso ou exclusão por curingas.</p>
 <h2>Documentação offline</h2>
 <p>As fontes autoritativas ficam em <code>Documentacao\Fonte</code>. Execute <code>npm.cmd run build:docs</code> para gerar HTML local em <code>Documentacao\Gerada</code>. O build não acessa a rede, não modifica o Markdown e usa <code>Documentacao\Assets\manual.css</code>; o HTML gerado não substitui as fontes Markdown nem as especificações.</p>
+<h2>Empacotamento local</h2>
+<p><code>publicar.cmd</code> delega para <code>scripts\release\publicar.ps1</code>. O pipeline valida ambiente, versão <code>package.json</code>, package/lock, dependências, UTF-8, testes e documentação antes de montar uma allowlist em <code>dist\Meminify-&lt;version&gt;</code>. Em seguida valida o conteúdo, cria um ZIP com uma única raiz versionada e grava o SHA-256 correspondente.</p>
+<p>O pacote inclui launcher, manifestos npm, <code>src</code>, <code>resources</code>, modelo de configuração e HTML offline. Exclui testes, especificações, <code>_ias</code>, scripts de desenvolvimento, dados locais, configuração pessoal, backups, <code>node_modules</code> e <code>dist</code> anterior. O empacotamento não publica GitHub Release.</p>
 </body>
 </html>

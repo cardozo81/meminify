@@ -13,3 +13,4 @@
 - Política Node.js homologada e bootstrap Windows leve, com instalação winget autorizada e validação reproduzível de npm/dependências.
 - Interface PowerShell, bridge JSON, logs técnicos, relatórios operacionais e restauração manual segura.
 - Manuais do usuário e técnico em Markdown, com build HTML offline local.
+- Versão de desenvolvimento `0.1.0` e empacotamento local allowlisted com ZIP e checksum SHA-256 validados.
