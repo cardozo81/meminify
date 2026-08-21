@@ -43,7 +43,9 @@ Não há política automática de retenção ou remoção histórica.
 
 ## Runtime e bootstrap
 
-`src/runtime/environment.js` valida Node, npm, package/lock e dependências locais. A política em `resources/runtime-policy.json` aceita Node LTS 24 e 22; 24 é preferida e a instalação interativa aprovada é `24.19.0` por winget. O bootstrap não consulta a internet nem executa `npm ci` quando o ambiente já está válido.
+`src/runtime/environment.js` valida Node, npm, package/lock e dependências locais. A política em `resources/runtime-policy.json` aceita Node LTS 24 e 22; 24 é preferida e a instalação interativa aprovada é `24.19.0` por winget. O bootstrap nunca executa `npm ci`/`npm install`: dependência ausente ou divergente bloqueia. A publicação produz `node_modules` de runtime por `npm ci --omit=dev` em staging descartável e a inicialização normal usa essa árvore offline.
+
+O risco de execução é calculado deterministicamente por modo e perfil antes da confirmação. Conflitos `.min` preexistentes elevam um nível, com teto `Critico`; escopo de arquivos é metadado separado. Não existe autorização substituta para risco indeterminado.
 
 Use `npm.cmd` no PowerShell para evitar bloqueio de `npm.ps1` pela política de execução.
 
@@ -61,4 +63,4 @@ As fontes autoritativas ficam em `Documentacao\Fonte`. Execute `npm.cmd run buil
 
 `publicar.cmd` delega para `scripts\release\publicar.ps1`. O pipeline valida ambiente, versão `package.json`, package/lock, dependências, UTF-8, testes e documentação antes de montar uma allowlist em `dist\Meminify-<version>`. Em seguida valida o conteúdo, cria um ZIP com uma única raiz versionada e grava o SHA-256 correspondente.
 
-O pacote inclui launcher, manifestos npm, `src`, `resources`, modelo de configuração e HTML offline. Exclui testes, especificações, `_ias`, scripts de desenvolvimento, dados locais, configuração pessoal, backups, `node_modules` e `dist` anterior. O empacotamento não publica GitHub Release.
+O pacote inclui launcher, manifestos npm, `src`, `resources`, modelo de configuração, HTML offline e `node_modules` de runtime gerado de forma limpa. Exclui testes, especificações, `_ias`, scripts de desenvolvimento, dados locais, configuração pessoal, backups, `node_modules` do checkout e `dist` anterior. O `Executar.cmd` empacotado é validado em CRLF e respeita a Execution Policy, bloqueando sob `Restricted` sem bypass. O empacotamento não publica GitHub Release.

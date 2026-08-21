@@ -95,6 +95,8 @@ function reportText({ plan, rows, resultStatus, durationMs, applicationVersion }
     `Duração (ms): ${formatBytes(durationMs)}`,
     `Motor/versão: ${plan.engine?.id ?? ''}/${plan.engine?.version ?? ''}`,
     `Perfil: ${plan.profile ?? ''}`,
+    `Risco estimado da execução: ${plan.executionRisk?.displayLevel ?? ''}`,
+    `Escopo da operação (arquivos): ${plan.scope?.fileCount ?? plan.items?.length ?? 0}`,
     `Modo de saída: ${plan.outputMode ?? ''}`,
     `Backup/referência: ${plan.backupRoot ?? ''}`,
     '',

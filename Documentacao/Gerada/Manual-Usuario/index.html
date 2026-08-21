@@ -21,7 +21,7 @@ a { color: #005a9c; }
 <h1>Manual do Usuário — Meminify</h1>
 <h2>Finalidade e segurança</h2>
 <p>O Meminify minifica arquivos JavaScript e CSS no Windows. Toda alteração exige confirmação explícita, validação prévia e prova de integridade por SHA-256. Em dúvida, erro de configuração, origem inacessível ou estado técnico não comprovado, a operação é bloqueada.</p>
-<p>Não existe risco zero. O risco do perfil é exibido separadamente; o algoritmo final de risco da execução ainda não está disponível.</p>
+<p>Não existe risco zero. O risco do perfil é exibido separadamente do risco estimado da execução, que sempre é calculado antes de uma execução válida. Se algum dado necessário não puder ser determinado, a execução é bloqueada sem autorização substituta.</p>
 <h2>Requisitos e primeira execução</h2>
 <ul>
 <li>Windows com Windows PowerShell.</li>
@@ -29,6 +29,8 @@ a { color: #005a9c; }
 <li>Dependências locais do projeto.</li>
 </ul>
 <p>Para o uso normal, execute <code>Executar.cmd</code> com duplo clique na raiz. Ele apenas inicia <code>Executar.ps1</code> relativo ao pacote, sem alterar a política de execução do PowerShell. <code>Executar.ps1</code> é a alternativa técnica/direta. O bootstrap valida Node, npm, <code>package.json</code>, <code>package-lock.json</code> e dependências. Se Node estiver ausente ou não homologado, pode oferecer a instalação exata autorizada via winget. Recusar a instalação não altera o sistema.</p>
+<p>As dependências de runtime já acompanham a distribuição. Com Node homologado instalado, o início normal funciona offline e não executa <code>npm ci</code> nem <code>npm install</code>. Dependência ausente ou divergente bloqueia a abertura; reextraia uma distribuição íntegra.</p>
+<p>A política do Windows PowerShell precisa permitir scripts locais. O Meminify não usa Bypass, não reduz e não altera permanentemente essa política. Sob <code>Restricted</code>, <code>Executar.cmd</code> mostra a restrição, aponta para este manual e termina com erro. Qualquer mudança apropriada de política deve ser decidida e executada explicitamente pelo usuário ou administrador conforme as regras da máquina ou organização.</p>
 <p>Após o bootstrap, o menu oferece análise, minificação, ajuste temporário, configurações, backups/restauração, relatórios e logs técnicos.</p>
 <h2>Configuração</h2>
 <p>A configuração persistente é <code>Configuracao\configuracao.ini</code>; o modelo versionado é <code>Configuracao\configuracao.ini.example</code>. Se o arquivo real não existir, o menu informa o caminho e só o cria a partir do modelo após confirmação. Ele nunca sobrescreve uma configuração existente.</p>
@@ -55,13 +57,19 @@ Incluir01=*.js</code></pre>
 <h3>Modos de saída e perfis</h3>
 <p>O modo persistente padrão é **Criar backup e sobrescrever os arquivos originais**. Ele cria e valida uma cópia em <code>_source_versions</code> antes de substituir o original. A alternativa é **Preservar os arquivos originais e criar arquivos <code>.min</code>**, que conserva a fonte e cria um destino <code>.min.js</code> ou <code>.min.css</code> ao lado dela. O menu Configurações apresenta essas opções por número e só salva uma mudança após confirmação explícita.</p>
 <p>Os perfis disponíveis são <code>Conservador</code> (risco muito baixo), <code>Padrao</code> (baixo) e <code>Maximo</code> (moderado). O motor homologado atual é esbuild para JavaScript e CSS, sem bundling.</p>
+<p>O risco estimado da execução é:</p>
+<ul>
+<li>Preservar originais e criar <code>.min</code>: Conservador = Baixo; Padrao = Moderado; Maximo = Alto.</li>
+<li>Criar backup e sobrescrever originais: Conservador = Moderado; Padrao = Alto; Maximo = Crítico.</li>
+</ul>
+<p>Se o modo <code>.min</code> possuir destinos preexistentes cuja sobrescrita será globalmente autorizada, o risco sobe um nível, no máximo até Crítico. A quantidade de arquivos é mostrada separadamente como escopo da operação e não muda o nível em 0.1.0. Bloqueios de integridade nunca são convertidos em risco nem relaxados por essa classificação.</p>
 <h2>Analisar e minificar</h2>
 <p>Escolha **Analisar arquivos** para ver origens efetivas, recursão, modo de saída, perfil, risco do perfil, encontrados, elegíveis, ignorados, conflitos <code>.min</code>, avisos e bloqueios. A análise não modifica arquivos.</p>
-<p>**Minificar** sempre refaz a pré-análise. Antes de qualquer escrita, o menu mostra o escopo e solicita confirmação. Como não há algoritmo final de risco de execução, a interface deixa essa ausência clara e pede autorização explícita adicional; ela não declara risco zero.</p>
+<p>**Minificar** sempre refaz a pré-análise. Antes de qualquer escrita, o menu mostra o escopo, o risco determinístico e solicita confirmação. Não existe fluxo para continuar quando o risco estiver indisponível.</p>
 <p>Se um destino <code>.min</code> já existir, todos os conflitos são listados e uma autorização global específica é exigida. Recusar cancela a execução inteira sem gerar saídas parciais.</p>
 <h2>Ajustes temporários</h2>
 <p>**Configurações persistentes** são gravadas em <code>configuracao.ini</code> somente por uma ação persistente com confirmação explícita. Elas podem conter origens/diretórios, arquivos explícitos, recursão, regras de inclusão/exclusão, perfil de minificação, modo de saída e motor homologado.</p>
-<p>**Ajustar somente esta execução** apresenta as mesmas duas opções em um menu numerado, além de manter a configuração persistente. O modo escolhido fica em memória e vale apenas para a execução confirmada; nunca modifica o INI. A opção **Cancelar** descarta todo o rascunho de ajustes e volta ao menu principal.</p>
+<p>**Ajustar somente esta execução** apresenta exatamente: 1 para manter o modo persistente, 2 para usar backup e sobrescrita, 3 para preservar originais e criar <code>.min</code>, e 0 para cancelar. As escolhas 1/2/3 terminam a seleção sem etapa adicional. O modo fica apenas em memória; 0 preserva o estado anterior da sessão, descarta o rascunho atual e nunca modifica o INI.</p>
 <h2>Backups e restauração manual</h2>
 <p>No modo de sobrescrita, a restauração lista backups válidos em <code>_source_versions</code> e também aceita uma pasta exata informada manualmente. O manifesto, a cópia de backup, os hashes, os caminhos e o estado técnico são validados antes de formar um plano.</p>
 <p>Se o arquivo atual ainda corresponde ao hash minificado registrado, basta a confirmação normal. Se foi alterado ou está ausente, há uma confirmação adicional; recusá-la preserva esse item. O arquivo minificado atual não recebe backup durante a restauração.</p>
@@ -76,6 +84,8 @@ Incluir01=*.js</code></pre>
 <li>**Origem inacessível, link ou arquivo somente leitura:** o scanner informa o motivo e bloqueia quando o escopo não pode ser comprovado.</li>
 <li>**Conflito <code>.min</code>:** revise a lista e confirme globalmente somente se aceitar sobrescrever todos os destinos listados.</li>
 <li>**Node não homologado:** instale uma linha LTS homologada; não use versões Current, EOL ou globais.</li>
+<li>**PowerShell bloqueia scripts locais/Restricted:** o Meminify não contorna a política. Consulte o administrador ou a política da organização; qualquer alteração deve ser explícita e apropriada ao ambiente.</li>
+<li>**Dependências internas ausentes ou inválidas:** reextraia um pacote íntegro. A inicialização não baixa nem reinstala dependências.</li>
 <li>**<code>recovery-required</code>:** não tente contornar o bloqueio; consulte o log técnico e preserve o estado para recuperação comprovada.</li>
 </ul>
 </body>

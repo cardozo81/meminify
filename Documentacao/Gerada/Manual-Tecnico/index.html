@@ -44,7 +44,8 @@ a { color: #005a9c; }
 </ul>
 <p>Não há política automática de retenção ou remoção histórica.</p>
 <h2>Runtime e bootstrap</h2>
-<p><code>src/runtime/environment.js</code> valida Node, npm, package/lock e dependências locais. A política em <code>resources/runtime-policy.json</code> aceita Node LTS 24 e 22; 24 é preferida e a instalação interativa aprovada é <code>24.19.0</code> por winget. O bootstrap não consulta a internet nem executa <code>npm ci</code> quando o ambiente já está válido.</p>
+<p><code>src/runtime/environment.js</code> valida Node, npm, package/lock e dependências locais. A política em <code>resources/runtime-policy.json</code> aceita Node LTS 24 e 22; 24 é preferida e a instalação interativa aprovada é <code>24.19.0</code> por winget. O bootstrap nunca executa <code>npm ci</code>/<code>npm install</code>: dependência ausente ou divergente bloqueia. A publicação produz <code>node_modules</code> de runtime por <code>npm ci --omit=dev</code> em staging descartável e a inicialização normal usa essa árvore offline.</p>
+<p>O risco de execução é calculado deterministicamente por modo e perfil antes da confirmação. Conflitos <code>.min</code> preexistentes elevam um nível, com teto <code>Critico</code>; escopo de arquivos é metadado separado. Não existe autorização substituta para risco indeterminado.</p>
 <p>Use <code>npm.cmd</code> no PowerShell para evitar bloqueio de <code>npm.ps1</code> pela política de execução.</p>
 <h2>UTF-8, qualidade e desenvolvimento</h2>
 <p>Texto humano e artefatos documentais usam UTF-8. <code>scripts/quality/check-encoding.mjs</code> verifica arquivos textuais e sequências de mojibake conhecidas. O projeto usa <code>node:test</code> com fixtures temporárias para configuração, scanner, execução, integridade, observabilidade e restauração.</p>
@@ -53,6 +54,6 @@ a { color: #005a9c; }
 <p>As fontes autoritativas ficam em <code>Documentacao\Fonte</code>. Execute <code>npm.cmd run build:docs</code> para gerar HTML local em <code>Documentacao\Gerada</code>. O build não acessa a rede, não modifica o Markdown e usa <code>Documentacao\Assets\manual.css</code>; o HTML gerado não substitui as fontes Markdown nem as especificações.</p>
 <h2>Empacotamento local</h2>
 <p><code>publicar.cmd</code> delega para <code>scripts\release\publicar.ps1</code>. O pipeline valida ambiente, versão <code>package.json</code>, package/lock, dependências, UTF-8, testes e documentação antes de montar uma allowlist em <code>dist\Meminify-&lt;version&gt;</code>. Em seguida valida o conteúdo, cria um ZIP com uma única raiz versionada e grava o SHA-256 correspondente.</p>
-<p>O pacote inclui launcher, manifestos npm, <code>src</code>, <code>resources</code>, modelo de configuração e HTML offline. Exclui testes, especificações, <code>_ias</code>, scripts de desenvolvimento, dados locais, configuração pessoal, backups, <code>node_modules</code> e <code>dist</code> anterior. O empacotamento não publica GitHub Release.</p>
+<p>O pacote inclui launcher, manifestos npm, <code>src</code>, <code>resources</code>, modelo de configuração, HTML offline e <code>node_modules</code> de runtime gerado de forma limpa. Exclui testes, especificações, <code>_ias</code>, scripts de desenvolvimento, dados locais, configuração pessoal, backups, <code>node_modules</code> do checkout e <code>dist</code> anterior. O <code>Executar.cmd</code> empacotado é validado em CRLF e respeita a Execution Policy, bloqueando sob <code>Restricted</code> sem bypass. O empacotamento não publica GitHub Release.</p>
 </body>
 </html>

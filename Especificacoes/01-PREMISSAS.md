@@ -43,6 +43,7 @@ As condutas proibidas e as proteções específicas estão em `10-SEGURANCA-E-IN
 - Acentos, `ç` e demais caracteres do português devem ser preservados corretamente.
 - Entrada e saída textual em Node.js devem declarar UTF-8 explicitamente.
 - A codificação em PowerShell e Windows deve receber validação específica.
+- Scripts PowerShell executados pelo Windows PowerShell usam UTF-8 com BOM; launchers `.cmd` usam UTF-8 sem BOM e finais de linha CRLF.
 - A futura documentação HTML deve conter `<meta charset="utf-8">` e `<html lang="pt-BR">`.
 
 ## Desenvolvimento

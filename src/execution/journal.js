@@ -4,6 +4,7 @@ import { readJsonUtf8, writeJsonUtf8Atomic } from '../integrity/json-store.js';
 import { SHA256_PATTERN, requireObject } from '../integrity/schema.js';
 import { validateTechnicalState } from '../integrity/state.js';
 import { ExecutionError } from './errors.js';
+import { validateCalculatedExecutionRisk } from './risk.js';
 
 export const JOURNAL_STATUSES = Object.freeze([
   'planned', 'prepared', 'running', 'completed', 'rolled-back', 'recovery-required',
@@ -26,6 +27,7 @@ export function validateExecutionJournal(journal) {
     requireObject(journal, 'INVALID_EXECUTION_JOURNAL', 'Journal');
     if (journal.formatVersion !== 1 || typeof journal.executionId !== 'string' || !journal.executionId) throw new Error('Cabeçalho inválido.');
     if (!Object.values(OUTPUT_MODES).includes(journal.outputMode) || !JOURNAL_STATUSES.includes(journal.status) || !Array.isArray(journal.items)) throw new Error('Modo, status ou itens inválidos.');
+    if (!validateCalculatedExecutionRisk(journal.executionRisk)) throw new Error('Risco da execução ausente ou inválido.');
     if (!MANIFEST_STATUSES.has(journal.manifestStatus) || (journal.manifestPath !== null && !isAbsolute(journal.manifestPath)) || !validHash(journal.manifestExpectedHash)) throw new Error('Controle de manifesto inválido.');
     if (!isAbsolute(journal.statePath) || typeof journal.stateBefore?.existed !== 'boolean') throw new Error('Snapshot de estado ausente.');
     validateTechnicalState(journal.stateBefore.value);

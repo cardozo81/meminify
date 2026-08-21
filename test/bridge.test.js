@@ -14,14 +14,16 @@ async function fixture() {
   return { root, source };
 }
 
-test('bridge retorna análise estruturada e risco de execução indisponível', async () => {
+test('bridge retorna análise estruturada e risco determinístico', async () => {
   const { root } = await fixture();
   try {
     const response = await runBridgeRequest({ command: 'analyze' }, { projectRoot: root });
     assert.equal(response.ok, true);
     assert.equal(response.analysis.status, 'ready');
     assert.equal(response.analysis.counts.eligible, 1);
-    assert.equal(response.analysis.riskAssessment.status, 'unavailable');
+    assert.equal(response.analysis.executionRisk.technicalLevel, 'Moderado');
+    assert.equal(response.analysis.executionRisk.status, 'determined');
+    assert.equal(response.analysis.scope.fileCount, 1);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
@@ -40,12 +42,22 @@ test('execução sem confirmação não modifica e ajuste temporário não persi
   const { root, source } = await fixture();
   try {
     const before = await readFile(source, 'utf8');
-    const response = await runBridgeRequest({ command: 'execute', confirmed: false, adjustments: { outputMode: 'BackupESobrescreverOriginais' }, riskAssessment: { authorized: true } }, { projectRoot: root });
+    const response = await runBridgeRequest({ command: 'execute', confirmed: false, adjustments: { outputMode: 'BackupESobrescreverOriginais' }, riskAssessment: { authorized: true, status: 'substituto-proibido' } }, { projectRoot: root });
     assert.equal(response.ok, false);
     assert.equal(response.diagnostic.code, 'EXECUTION_CONFIRMATION_REQUIRED');
     assert.equal(await readFile(source, 'utf8'), before);
     const summary = await runBridgeRequest({ command: 'summary' }, { projectRoot: root });
     assert.equal(summary.configuration.outputMode, 'PreservarOriginaisECriarMinificados');
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('bridge ignora autorização substituta e mantém o risco calculado', async () => {
+  const { root } = await fixture();
+  try {
+    const response = await runBridgeRequest({ command: 'analyze', riskAssessment: { authorized: true, status: 'unavailable' } }, { projectRoot: root });
+    assert.equal(response.ok, true);
+    assert.equal(response.analysis.executionRisk.technicalLevel, 'Moderado');
+    assert.equal('riskAssessment' in response.analysis, false);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

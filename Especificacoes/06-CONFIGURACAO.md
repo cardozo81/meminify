@@ -66,3 +66,12 @@ Ausência ou inacessibilidade de origens configuradas segue `10-SEGURANCA-E-INTE
 A configuração persistente e a configuração efetiva de uma execução são objetos distintos. Inclusões, exclusões, origens, opções ou outros ajustes temporários valem apenas para a execução atual.
 
 Um ajuste temporário nunca modifica `Configuracao\configuracao.ini`. A persistência só ocorre quando o usuário entra explicitamente na área de configuração persistente e salva.
+
+A seleção temporária do modo de saída apresenta exatamente:
+
+- `1`: manter a configuração persistente atual;
+- `2`: usar temporariamente `BackupESobrescreverOriginais`;
+- `3`: usar temporariamente `PreservarOriginaisECriarMinificados`;
+- `0`: cancelar a operação temporária atual.
+
+As opções 1, 2 e 3 concluem a seleção sem etapa adicional de aplicação. A opção 0 descarta o rascunho da operação atual, preserva o estado efetivo anterior da sessão e nunca modifica o INI.

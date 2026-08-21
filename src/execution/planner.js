@@ -6,6 +6,7 @@ import { readTechnicalState } from '../integrity/state.js';
 import { resolveRuntimePaths } from '../runtime/paths.js';
 import { scan } from '../scanner/index.js';
 import { ExecutionError } from './errors.js';
+import { calculateExecutionRisk } from './risk.js';
 
 function deepFreeze(value) {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -51,10 +52,6 @@ function findStateRecord(state, sourcePath) {
   ));
 }
 
-function validateRiskAssessment(riskAssessment) {
-  return Boolean(riskAssessment && typeof riskAssessment === 'object' && riskAssessment.authorized === true);
-}
-
 const SAFE_EXECUTION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 export async function createExecutionPlan({
@@ -64,7 +61,6 @@ export async function createExecutionPlan({
   backupRoot,
   executionId,
   timestamp = new Date().toISOString(),
-  riskAssessment = null,
   meminifyVersion = null,
   scannerOptions = {},
 }) {
@@ -172,16 +168,19 @@ export async function createExecutionPlan({
     }
   }
 
-  const riskAuthorized = validateRiskAssessment(riskAssessment);
   if (conflicts.length > 0) {
     const executionRecoveryDirectory = join(runtimePaths.recoveryDirectory, executionId);
     if ((await pathState(executionRecoveryDirectory)).exists) {
       blockers.push({ code: 'EXECUTION_RECOVERY_COLLISION', normalizedPath: executionRecoveryDirectory });
     }
   }
+  const executionRisk = calculateExecutionRisk({
+    outputMode: configuration.outputMode,
+    profile: configuration.profile,
+    conflictCount: conflicts.length,
+  });
   const requiredConfirmations = [
     { type: 'execution', satisfied: false },
-    { type: 'risk', satisfied: riskAuthorized },
   ];
   if (conflicts.length > 0) requiredConfirmations.push({ type: 'overwrite-min-conflicts', satisfied: false });
 
@@ -194,7 +193,8 @@ export async function createExecutionPlan({
     outputMode: configuration.outputMode,
     profile: configuration.profile,
     profileRisk: PROFILE_DEFINITIONS[configuration.profile]?.risk ?? null,
-    riskAssessment: riskAssessment ? { ...riskAssessment } : null,
+    executionRisk,
+    scope: { fileCount: items.length },
     engine: minifier ? { id: minifier.id, version: minifier.version } : { id: configuration.engineId, version: null },
     runtimePaths,
     backupRoot: backupRoot ? normalize(resolve(backupRoot)) : null,

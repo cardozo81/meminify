@@ -6,6 +6,7 @@ import test from 'node:test';
 import { OUTPUT_MODES } from '../src/domain/index.js';
 import {
   ExecutionError,
+  calculateExecutionRisk,
   createExecutionPlan,
   executePlan,
   readExecutionJournal,
@@ -15,8 +16,6 @@ import {
 import { hashContentSha256, hashFileSha256, readTechnicalState } from '../src/integrity/index.js';
 import { createDefaultMinifierRegistry } from '../src/minifiers/index.js';
 import { resolveRuntimePaths } from '../src/runtime/paths.js';
-
-const RISK = Object.freeze({ authorized: true, source: 'teste-injetado' });
 
 async function exists(filePath) {
   try { await lstat(filePath); return true; } catch (cause) { if (cause?.code === 'ENOENT') return false; throw cause; }
@@ -67,7 +66,6 @@ async function planFor(paths, outputMode, options = {}) {
     backupRoot: paths.backupRoot,
     executionId: options.executionId ?? 'exec-001',
     timestamp: '2026-08-21T12:00:00.000Z',
-    riskAssessment: options.riskAssessment === undefined ? RISK : options.riskAssessment,
   });
   return { plan, minifier };
 }
@@ -90,8 +88,13 @@ test('pré-análise é completa, imutável e exige confirmações sem mutar arqu
     const denied = await executePlan(plan, minifier, { confirmed: true, authorizeOverwriteConflicts: false });
     assert.equal(denied.status, 'cancelled');
     assert.deepEqual(await Promise.all([...paths.files, ...destinations].map((filePath) => readFile(filePath, 'utf8'))), originals);
-    const noRisk = await planFor(paths, OUTPUT_MODES.PRESERVE_AND_CREATE_MINIFIED, { riskAssessment: null, executionId: 'exec-002' });
-    await assert.rejects(executePlan(noRisk.plan, noRisk.minifier, { confirmed: true, authorizeOverwriteConflicts: true }), (error) => error.code === 'RISK_AUTHORIZATION_REQUIRED');
+    const withoutRisk = structuredClone(plan);
+    withoutRisk.executionRisk = null;
+    await assert.rejects(executePlan(withoutRisk, minifier, { confirmed: true, authorizeOverwriteConflicts: true }), (error) => error.code === 'RISK_CALCULATION_REQUIRED');
+    const forgedRisk = structuredClone(plan);
+    forgedRisk.executionRisk.technicalLevel = 'Critico';
+    forgedRisk.executionRisk.displayLevel = 'Crítico';
+    await assert.rejects(executePlan(forgedRisk, minifier, { confirmed: true, authorizeOverwriteConflicts: true }), (error) => error.code === 'RISK_CALCULATION_REQUIRED');
   } finally {
     await rm(paths.root, { recursive: true, force: true });
   }
@@ -251,6 +254,7 @@ test('journal interrompido é recuperado deterministicamente e ambiguidade bloqu
       executionId: 'interrompida-001',
       timestamp: '2026-08-21T12:00:00.000Z',
       outputMode: OUTPUT_MODES.PRESERVE_AND_CREATE_MINIFIED,
+      executionRisk: calculateExecutionRisk({ outputMode: OUTPUT_MODES.PRESERVE_AND_CREATE_MINIFIED, profile: 'Padrao', conflictCount: 0 }),
       status: 'running',
       statePath: paths.runtime.technicalState,
       stateBefore: { existed: false, value: { formatVersion: 1, records: [] } },

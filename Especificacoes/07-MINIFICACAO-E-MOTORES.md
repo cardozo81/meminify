@@ -61,3 +61,5 @@ Se Node.js estiver ausente ou não homologado e o winget estiver disponível, a 
 - Ao invocar npm a partir do PowerShell, deve ser usado `npm.cmd`, evitando interferência da política de execução de scripts.
 - A inicialização normal deve usar verificações leves.
 - A inicialização normal não consulta a internet, executa `npm ci`, atualiza Node.js ou atualiza esbuild a cada uso.
+- A distribuição inclui uma árvore de dependências de runtime produzida por `npm ci --omit=dev` em staging descartável a partir dos manifestos autoritativos; o `node_modules` do checkout de desenvolvimento nunca é copiado.
+- Com Node homologado presente, a distribuição extraída inicia offline. Dependência empacotada ausente ou divergente bloqueia com diagnóstico e nunca dispara instalação automática.

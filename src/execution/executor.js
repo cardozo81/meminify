@@ -18,6 +18,7 @@ import {
 import { ExecutionError } from './errors.js';
 import { writeExecutionJournal } from './journal.js';
 import { recoverInterruptedExecution, rollbackExecutionJournal } from './recovery.js';
+import { validateCalculatedExecutionRisk } from './risk.js';
 
 function clone(value) {
   return structuredClone(value);
@@ -51,6 +52,7 @@ function createJournal(plan) {
     meminifyVersion: plan.meminifyVersion ?? null,
     timestamp: plan.timestamp,
     outputMode: plan.outputMode,
+    executionRisk: clone(plan.executionRisk),
     status: 'planned',
     statePath: plan.runtimePaths.technicalState,
     stateBefore: clone(plan.stateBefore),
@@ -88,6 +90,7 @@ function upsertStateRecord(state, plan, item, outputHash, outputSize) {
     engine: plan.engine.id,
     engineVersion: plan.engine.version,
     profile: plan.profile,
+    executionRisk: plan.executionRisk.technicalLevel,
     sourceSize: item.sourceSize,
     minifiedSize: outputSize,
   });
@@ -121,7 +124,9 @@ async function prepareRecovery(plan, item, journalItem, dependencies) {
 function validateExecutionAuthorization(plan, options) {
   if (plan.status !== 'ready' || plan.diagnostics.blockers.length > 0) throw new ExecutionError('PLAN_BLOCKED', 'A pré-análise contém bloqueios e não pode ser executada.');
   if (options.confirmed !== true) throw new ExecutionError('EXECUTION_CONFIRMATION_REQUIRED', 'A execução exige confirmação explícita do chamador.');
-  if (!plan.riskAssessment || plan.riskAssessment.authorized !== true) throw new ExecutionError('RISK_AUTHORIZATION_REQUIRED', 'Uma avaliação/autorização explícita de risco é obrigatória antes de qualquer mutação.');
+  if (!validateCalculatedExecutionRisk(plan.executionRisk, { outputMode: plan.outputMode, profile: plan.profile, conflictCount: plan.conflicts.length })) {
+    throw new ExecutionError('RISK_CALCULATION_REQUIRED', 'A execução exige uma classificação determinística de risco antes de qualquer mutação.');
+  }
   if (plan.conflicts.length > 0 && options.authorizeOverwriteConflicts !== true) return false;
   return true;
 }
@@ -210,6 +215,7 @@ export async function executePlan(plan, minifier, options = {}, dependencies = {
           engine: plan.engine.id,
           engineVersion: plan.engine.version,
           profile: plan.profile,
+          executionRisk: plan.executionRisk.technicalLevel,
           minifiedSize: outputSize,
           minifiedSha256: outputHash,
           status: 'minificado',

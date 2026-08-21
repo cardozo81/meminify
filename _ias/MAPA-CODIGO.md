@@ -48,7 +48,7 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `src/runtime/paths.js` | Raiz de instalação e caminhos técnicos normativos relativos ao runtime | Node.js `path`, `url` |
 | `src/runtime/policy.js` | Leitura e validação da política Node.js homologada | `resources/runtime-policy.json` |
 | `src/runtime/dependencies.js` | Validação de package/lock e dependências locais | Node.js `fs/promises` |
-| `src/runtime/environment.js` | Descoberta/validação de Node/npm e instalação autorizada via winget | Node.js `child_process`, módulos runtime |
+| `src/runtime/environment.js` | Descoberta/validação de Node/npm, instalação autorizada de Node via winget e bloqueio de dependência empacotada inválida | Node.js `child_process`, módulos runtime |
 | `src/integrity/errors.js` | Erros estruturados de integridade | Nenhuma |
 | `src/integrity/hash.js` | SHA-256 incremental de arquivos | Node.js `crypto`, `fs` |
 | `src/integrity/json-store.js` | Leitura UTF-8 estrita e persistência JSON por arquivo temporário e rename | Node.js built-ins |
@@ -64,6 +64,7 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | --- | --- | --- |
 | `src/execution/errors.js` | Erros estruturados de planejamento, execução e recuperação | Nenhuma |
 | `src/execution/planner.js` | Pré-análise imutável, destinos `.min`, conflitos, hashes e autorizações exigidas | Scanner, domínio e integridade |
+| `src/execution/risk.js` | Matriz determinística de risco 0.1.0 e elevação por conflito `.min` | Domínio e erros de execução |
 | `src/execution/journal.js` | Schema e persistência do journal write-ahead da última execução | Integridade e domínio |
 | `src/execution/filesystem.js` | Criação/substituição exata, cópias de recuperação e provas SHA-256 | Node.js built-ins, integridade |
 | `src/execution/recovery.js` | Rollback exato e recuperação determinística de execução interrompida | Journal, estado e filesystem transacional |
@@ -119,7 +120,7 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | --- | --- | --- |
 | `publicar.cmd` | Launcher fino do empacotamento local | Windows CMD, `scripts/release/publicar.ps1` |
 | `scripts/release/publicar.ps1` | Orquestra gates, montagem, ZIP e checksum SHA-256 | Node.js, npm.cmd, Compress-Archive |
-| `scripts/release/package.mjs` | Autoridade testável de versão, allowlist, montagem e validação do pacote | Runtime, Node.js built-ins |
+| `scripts/release/package.mjs` | Autoridade de versão, staging limpo de dependências, CRLF do CMD, allowlist, montagem e validação | Runtime, npm e Node.js built-ins |
 | `LEIA-ME.txt` | Orientação prática distribuída ao usuário final | Pacote local, Manual do Usuário |
 | `test/packaging.test.js` | Testes de nomes versionados, allowlist, proibições, ZIP, checksum e limpeza segura | Módulo de empacotamento, PowerShell |
 

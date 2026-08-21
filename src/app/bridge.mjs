@@ -54,7 +54,8 @@ function summarizePlan(plan) {
     outputMode: plan.outputMode,
     profile: plan.profile,
     profileRisk: plan.profileRisk,
-    riskAssessment: plan.riskAssessment,
+    executionRisk: plan.executionRisk,
+    scope: plan.scope,
     engine: plan.engine,
     sources: plan.sources,
     counts: { found: plan.items.length + plan.ignored.length, eligible: plan.items.length, ignored: plan.ignored.length },
@@ -88,14 +89,12 @@ async function persistArtifacts({ projectRoot, plan, result = null, resultStatus
 async function createPlan(request, persistent, applicationVersion) {
   const registry = createDefaultMinifierRegistry();
   const effective = deriveEffectiveConfiguration(persistent.configuration, adjustmentsFrom(request), { allowedEngines: new Set(registry.list().map((item) => item.id)) });
-  const riskAssessment = request.riskAssessment ?? { authorized: false, status: 'unavailable', reason: 'EXECUTION_RISK_ALGORITHM_PENDING' };
   const plan = await createExecutionPlan({
     configuration: effective,
     minifier: registry.get(effective.engineId),
     runtimeRoot: persistent.projectRoot,
     backupRoot: effective.outputMode === 'BackupESobrescreverOriginais' ? paths(persistent.projectRoot).backupRoot : undefined,
     executionId: request.executionId ?? `exec-${Date.now()}`,
-    riskAssessment,
     meminifyVersion: applicationVersion,
   });
   return { plan, minifier: registry.get(effective.engineId), effective };

@@ -1,4 +1,7 @@
-import { copyFile, lstat, mkdir, readFile, readdir, rm } from 'node:fs/promises';
+import { copyFile, cp, lstat, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validatePackageLock, validateProjectDependencies } from '../../src/runtime/dependencies.js';
@@ -21,14 +24,62 @@ const ALLOWED_TREES = Object.freeze([
   { path: 'src', extensions: new Set(['.js', '.mjs', '.ps1']) },
   { path: 'resources', extensions: new Set(['.json']) },
 ]);
-const FORBIDDEN_PARTS = new Set(['.git', '.github', '_ias', 'Especificacoes', 'test', 'tests', 'fixtures', 'node_modules', 'dist', 'Dados', '_source_versions']);
+const FORBIDDEN_PARTS = new Set(['.git', '.github', '_ias', 'Especificacoes', 'test', 'tests', 'fixtures', 'dist', 'Dados', '_source_versions']);
 const TEXT_EXTENSIONS = new Set(['.cmd', '.css', '.html', '.ini', '.js', '.json', '.lock', '.mjs', '.ps1', '.txt']);
 const REPRESENTATIVE_TERMS = Object.freeze(['configuração', 'minificação', 'execução', 'usuário', 'não', 'restauração', 'relatório']);
-const LOCAL_CONTENT = /(?:[A-Za-z]:\\(?:Users|IA-PROJETOS)\\|OneDrive\\|(?:ghp_|github_pat_|sk-)[A-Za-z0-9_-]+|(?:password|token|secret)\s*=)/i;
+const LOCAL_MACHINE_CONTENT = /(?:[A-Za-z]:\\(?:Users|IA-PROJETOS)\\|OneDrive\\|(?:ghp_|github_pat_|sk-)[A-Za-z0-9_-]+)/i;
+const SENSITIVE_ASSIGNMENT = /(?:password|token|secret)\s*=/i;
+const execFileAsync = promisify(execFile);
 
 function slash(value) { return value.split(sep).join('/'); }
 function extension(name) { const index = name.lastIndexOf('.'); return index < 0 ? '' : name.slice(index).toLowerCase(); }
 async function regularFile(path) { const stats = await lstat(path); if (!stats.isFile() || stats.isSymbolicLink()) throw new Error(`Arquivo não regular ou link proibido: ${path}.`); }
+
+function normalizeCmdBytes(text) {
+  return text.replace(/\r?\n/g, '\r\n');
+}
+
+async function copyReleaseFile(source, destination, relativePath) {
+  await mkdir(dirname(destination), { recursive: true });
+  if (extension(relativePath) === '.cmd') {
+    await writeFile(destination, normalizeCmdBytes(await readFile(source, 'utf8')), { encoding: 'utf8' });
+    return;
+  }
+  await copyFile(source, destination);
+}
+
+function validateCmdCrLfBytes(bytes, label) {
+  for (let index = 0; index < bytes.length; index += 1) {
+    if (bytes[index] === 0x0A && (index === 0 || bytes[index - 1] !== 0x0D)) throw new Error(`${label} deve usar exclusivamente finais de linha CRLF.`);
+  }
+  if (!bytes.includes(0x0A)) throw new Error(`${label} não contém linhas validáveis.`);
+}
+
+async function runCleanNpmCi(stagingRoot) {
+  const command = process.platform === 'win32' ? (process.env.ComSpec ?? 'cmd.exe') : 'npm';
+  const args = process.platform === 'win32'
+    ? ['/d', '/s', '/c', 'npm.cmd ci --omit=dev --no-audit --no-fund']
+    : ['ci', '--omit=dev', '--no-audit', '--no-fund'];
+  try {
+    await execFileAsync(command, args, { cwd: stagingRoot, windowsHide: true, timeout: 600000, maxBuffer: 4 * 1024 * 1024 });
+  } catch (cause) {
+    throw new Error(`A instalação limpa das dependências de runtime falhou: ${cause.stderr ?? cause.message}.`, { cause });
+  }
+}
+
+export async function stageRuntimeDependencies(projectRoot, packageRoot, { install = runCleanNpmCi } = {}) {
+  const stagingRoot = await mkdtemp(join(tmpdir(), 'Meminify runtime dependencies '));
+  try {
+    await copyFile(join(projectRoot, 'package.json'), join(stagingRoot, 'package.json'));
+    await copyFile(join(projectRoot, 'package-lock.json'), join(stagingRoot, 'package-lock.json'));
+    await install(stagingRoot);
+    const staged = await validateProjectDependencies({ projectRoot: stagingRoot });
+    if (!staged.valid) throw new Error(`A instalação limpa não produziu dependências válidas: ${JSON.stringify(staged.diagnostics)}.`);
+    await cp(join(stagingRoot, 'node_modules'), join(packageRoot, 'node_modules'), { recursive: true, force: false, errorOnExist: true });
+  } finally {
+    await rm(stagingRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+}
 
 async function walk(directory, root = directory) {
   const files = [];
@@ -87,13 +138,35 @@ async function validatePackagedText(packageRoot, files) {
     const path = join(packageRoot, ...file.split('/'));
     await validateFile(path);
     const text = await readFile(path, 'utf8');
-    if (LOCAL_CONTENT.test(text)) throw new Error(`Conteúdo local ou credencial proibida no pacote: ${file}.`);
+    if (LOCAL_MACHINE_CONTENT.test(text) || (!file.startsWith('node_modules/') && SENSITIVE_ASSIGNMENT.test(text))) throw new Error(`Conteúdo local ou credencial proibida no pacote: ${file}.`);
     texts.push(text);
   }
   const combined = texts.join('\n');
   for (const term of REPRESENTATIVE_TERMS) {
     if (!combined.includes(term)) throw new Error(`Termo pt-BR obrigatório ausente no pacote: ${term}.`);
   }
+}
+
+async function validatePackagedRuntimeDependencies(packageRoot) {
+  const dependencyValidation = await validateProjectDependencies({ projectRoot: packageRoot });
+  if (!dependencyValidation.valid) throw new Error(`Dependências de runtime ausentes ou inválidas no pacote: ${JSON.stringify(dependencyValidation.diagnostics)}.`);
+  const actualFiles = await walk(join(packageRoot, 'node_modules'));
+  if (actualFiles.length === 0) throw new Error('A árvore limpa de dependências de runtime está vazia.');
+  const lockedRoots = Object.keys(dependencyValidation.lockJson.packages ?? {}).filter((key) => key.startsWith('node_modules/'));
+  for (const file of actualFiles) {
+    const packagedPath = `node_modules/${file}`;
+    if (file === '.package-lock.json' || file.startsWith('.bin/')) continue;
+    if (!lockedRoots.some((root) => packagedPath === root || packagedPath.startsWith(`${root}/`))) {
+      throw new Error(`Arquivo de dependência fora do lockfile: ${packagedPath}.`);
+    }
+  }
+  const validationSource = `import esbuild from 'esbuild'; const result = await esbuild.transform('const valor = 1;', { loader: 'js', minify: true }); if (esbuild.version !== ${JSON.stringify(dependencyValidation.packageJson.dependencies.esbuild)} || !result.code) process.exit(1);`;
+  try {
+    await execFileAsync(process.execPath, ['--input-type=module', '--eval', validationSource], { cwd: packageRoot, windowsHide: true, timeout: 30000 });
+  } catch (cause) {
+    throw new Error('O runtime empacotado do esbuild não foi validado.', { cause });
+  }
+  return { dependencyValidation, files: actualFiles };
 }
 
 export async function validatePackagedTree({ projectRoot = scriptRoot, packageRoot, version } = {}) {
@@ -104,16 +177,18 @@ export async function validatePackagedTree({ projectRoot = scriptRoot, packageRo
   for (const required of expected) if (!actual.includes(required)) throw new Error(`Arquivo obrigatório ausente no pacote: ${required}.`);
   for (const file of actual) {
     if (forbidden(file)) throw new Error(`Conteúdo proibido no pacote: ${file}.`);
-    if (!expected.includes(file)) throw new Error(`Conteúdo fora da allowlist no pacote: ${file}.`);
+    if (!expected.includes(file) && !file.startsWith('node_modules/')) throw new Error(`Conteúdo fora da allowlist no pacote: ${file}.`);
   }
+  validateCmdCrLfBytes(await readFile(join(packageRoot, 'Executar.cmd')), 'Executar.cmd empacotado');
   await validatePackagedText(packageRoot, actual);
   const packagedLock = await validatePackageLock({ projectRoot: packageRoot });
   if (!packagedLock.valid) throw new Error(`Package/lock inválido no pacote: ${JSON.stringify(packagedLock.diagnostics)}.`);
   if (packagedLock.packageJson.version !== version || packagedLock.lockJson.packages?.['']?.version !== version) throw new Error('Versão divergente entre pacote, package.json e package-lock.json.');
+  await validatePackagedRuntimeDependencies(packageRoot);
   return { valid: true, files: actual, metadata };
 }
 
-export async function assemblePackage(projectRoot = scriptRoot) {
+export async function assemblePackage(projectRoot = scriptRoot, options = {}) {
   const metadata = await getPackageMetadata(projectRoot);
   assertSafeDistTarget(projectRoot, metadata.packageRoot, metadata.packageName);
   assertSafeDistTarget(projectRoot, metadata.zipPath, `${metadata.packageName}.zip`);
@@ -125,9 +200,9 @@ export async function assemblePackage(projectRoot = scriptRoot) {
   for (const file of await collectAllowedFiles(projectRoot)) {
     const source = join(projectRoot, ...file.split('/'));
     const destination = join(metadata.packageRoot, ...file.split('/'));
-    await mkdir(dirname(destination), { recursive: true });
-    await copyFile(source, destination);
+    await copyReleaseFile(source, destination, file);
   }
+  await stageRuntimeDependencies(projectRoot, metadata.packageRoot, options);
   await validatePackagedTree({ projectRoot, packageRoot: metadata.packageRoot, version: metadata.version });
   return metadata;
 }

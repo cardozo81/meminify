@@ -87,14 +87,15 @@ test('bootstrap não executa npm ci quando ambiente e dependências já são vá
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
-test('bootstrap usa npm.cmd ci apenas quando dependência falta e valida o resultado', async () => {
+test('bootstrap bloqueia dependência ausente sem executar npm ci ou install', async () => {
   const root = await projectFixture({ dependency: false });
   try {
     const mock = runtimeRunner();
     const result = await bootstrapEnvironment({ projectRoot: root, policy, commandRunner: mock.runner });
     assert.equal(result.ok, false);
     assert.equal(result.code, 'DEPENDENCY_VALIDATION_FAILED');
-    assert.equal(mock.calls.some(([command, args]) => String(command).toLowerCase().endsWith('npm.cmd') && args[0] === 'ci'), true);
+    assert.match(result.message, /não instala dependências automaticamente/);
+    assert.equal(mock.calls.some(([, args]) => ['ci', 'install'].includes(args[0])), false);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

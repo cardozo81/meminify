@@ -38,6 +38,7 @@ Meminify-<version>\
   Executar.ps1
   package.json
   package-lock.json
+  node_modules\
   LEIA-ME.txt
   Configuracao\configuracao.ini.example
   src\
@@ -46,9 +47,11 @@ Meminify-<version>\
   Documentacao\Gerada\Manual-Tecnico\index.html
 ```
 
-`src\` contém somente módulos JavaScript, MJS e PowerShell; `resources\` contém somente JSON requerido pelo runtime. `node_modules` não é distribuído: o bootstrap usa os manifestos bloqueados para instalação local reproduzível quando necessária. O ZIP contém exatamente uma raiz `Meminify-<version>/`.
+`src\` contém somente módulos JavaScript, MJS e PowerShell; `resources\` contém somente JSON requerido pelo runtime. `node_modules\` é gerado exclusivamente para a distribuição por instalação limpa e reproduzível em staging descartável, usando `package.json`, `package-lock.json` e somente dependências de produção. O checkout de desenvolvimento nunca é a fonte dessa árvore. O ZIP contém exatamente uma raiz `Meminify-<version>/`.
 
 `Executar.cmd` é a entrada recomendada para uso normal por duplo clique e delega para `Executar.ps1` relativo ao próprio pacote, sem alterar a política de execução. `LEIA-ME.txt` é a orientação prática destinada ao usuário; o README de desenvolvimento não integra o pacote.
+
+O `Executar.cmd` empacotado usa UTF-8 sem BOM e CRLF validado por bytes. Ele não usa `ExecutionPolicy Bypass`, não altera política persistente, preserva o código de saída e pausa somente em falha. Se a política efetiva for `Restricted`, bloqueia com explicação e aponta para o manual offline.
 
 O checksum usa SHA-256 em texto convencional: hash hexadecimal minúsculo, dois espaços e o nome do ZIP.
 
@@ -67,7 +70,7 @@ O pacote não deve incluir conteúdo exclusivo de desenvolvimento ou dados locai
 - logs, relatórios e estado locais;
 - configuração pessoal do desenvolvedor;
 - `dist` anterior;
-- `node_modules` de desenvolvimento.
+- `node_modules` de desenvolvimento ou copiado do checkout; somente a árvore de runtime gerada no staging de publicação é permitida.
 
 A composição final deve ser construída em destino limpo e validada antes da compactação.
 

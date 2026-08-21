@@ -44,7 +44,7 @@ test('execução bem-sucedida gera relatório integrado sem alterar dados do pla
     await mkdir(join(root, 'Configuracao'), { recursive: true });
     await writeFile(source, 'const valor = 1;\n', 'utf8');
     await writeFile(join(root, 'Configuracao', 'configuracao.ini'), `[Configuracao]\nMotor=esbuild\nPerfil=Padrao\nModoSaida=PreservarOriginaisECriarMinificados\nIncluir01=**/*.js\n\n[Origem.001]\nTipo=Arquivo\nCaminho=${source}\nExecutarPorPadrao=true\nModo=Arquivo\n`, 'utf8');
-    const response = await runBridgeRequest({ command: 'execute', confirmed: true, riskAssessment: { authorized: true }, executionId: 'exec-report' }, { projectRoot: root });
+    const response = await runBridgeRequest({ command: 'execute', confirmed: true, executionId: 'exec-report' }, { projectRoot: root });
     assert.equal(response.ok, true);
     assert.equal(response.result.status, 'completed');
     assert.ok(response.artifacts.reports.txtPath);

@@ -20,7 +20,8 @@
     $errorOutput = $process.StandardError.ReadToEnd()
     $process.WaitForExit()
     if ($process.ExitCode -ne 0 -and [string]::IsNullOrWhiteSpace($result)) {
-        return [pscustomobject]@{ ok = $false; diagnostic = [pscustomobject]@{ code = 'BRIDGE_FAILED'; message = 'A aplicação Node não retornou uma resposta estruturada.' } }
+        $detail = if ([string]::IsNullOrWhiteSpace($errorOutput)) { 'A aplicação Node não retornou uma resposta estruturada.' } else { "A aplicação Node falhou: $($errorOutput.Trim())" }
+        return [pscustomobject]@{ ok = $false; diagnostic = [pscustomobject]@{ code = 'BRIDGE_FAILED'; message = $detail } }
     }
     try { return ($result | ConvertFrom-Json) }
     catch { return [pscustomobject]@{ ok = $false; diagnostic = [pscustomobject]@{ code = 'INVALID_BRIDGE_RESPONSE'; message = 'A resposta da aplicação Node é inválida.' } } }
@@ -40,7 +41,9 @@ function Show-Analysis {
     param($Analysis)
     Show-Mensagem "`nEscopo efetivo" Cyan
     Show-Mensagem "Modo: $($Analysis.outputMode) | Perfil: $($Analysis.profile) | Risco do perfil: $($Analysis.profileRisk)"
-    Show-Mensagem "Risco estimado da execução: ainda não disponível; não é risco zero." Yellow
+    Show-Mensagem "Risco estimado da execução: $($Analysis.executionRisk.displayLevel)" Yellow
+    Show-Mensagem "Escopo da operação: $($Analysis.scope.fileCount) arquivo(s) elegível(is)." Gray
+    if ($Analysis.executionRisk.conflictElevation) { Show-Mensagem 'Fator de risco: sobrescrita global autorizável de destino .min preexistente.' Yellow }
     foreach ($source in $Analysis.sources) { Show-Mensagem "Origem $($source.id): $($source.path) | Recursivo: $($source.recursive)" Cyan }
     Show-Mensagem "Encontrados: $($Analysis.counts.found) | Elegíveis: $($Analysis.counts.eligible) | Ignorados: $($Analysis.counts.ignored)"
     if ($Analysis.conflicts.Count -gt 0) {
@@ -59,7 +62,7 @@ function Show-Analysis {
 
 function Invoke-Analyze {
     param([hashtable]$Adjustments)
-    $request = @{ command = 'analyze'; adjustments = $Adjustments; riskAssessment = @{ authorized = $false; status = 'unavailable'; reason = 'EXECUTION_RISK_ALGORITHM_PENDING' } }
+    $request = @{ command = 'analyze'; adjustments = $Adjustments }
     $response = Invoke-MeminifyBridge $request
     if (-not $response.ok) {
         $message = if ($response.diagnostic -and $response.diagnostic.message) { $response.diagnostic.message } elseif ($response.message) { $response.message } elseif ($response.code -eq 'CONFIGURATION_MISSING') { "Configuração persistente ausente: $($response.configurationPath). Crie-a explicitamente pelo menu Configurações." } elseif ($response.code) { "A análise foi bloqueada ($($response.code))." } else { 'A análise foi bloqueada por uma resposta sem diagnóstico.' }
@@ -152,22 +155,18 @@ function Get-BridgeErrorMessage {
 function Invoke-TemporaryAdjustment {
     $summary = Invoke-MeminifyBridge @{ command = 'summary' }
     if (-not $summary.ok -or -not $summary.configuration) { Show-Mensagem (Get-BridgeErrorMessage $summary 'Não foi possível carregar a configuração persistente.') Red; return }
-    $draft = @{}
-    foreach ($key in $script:TemporaryAdjustments.Keys) { $draft[$key] = $script:TemporaryAdjustments[$key] }
     while ($true) {
         Write-Host "`nModo de saída somente para esta execução:"
         Write-Host "Atual persistente: $(Get-ModoSaidaDescricao $summary.configuration.outputMode)"
         Write-Host '1. Manter a configuração persistente atual'
         Write-Host '2. Criar backup e sobrescrever os arquivos originais'
         Write-Host '3. Preservar os arquivos originais e criar arquivos .min'
-        Write-Host '4. Aplicar os ajustes desta execução e voltar ao menu'
         Write-Host '0. Cancelar e voltar ao menu'
         $choice = (Read-Host 'Escolha').Trim()
         switch ($choice) {
-            '1' { [void]$draft.Remove('outputMode'); Show-Mensagem 'Modo temporário definido para a configuração persistente.' Green }
-            '2' { $draft.outputMode = 'BackupESobrescreverOriginais'; Show-Mensagem 'Modo temporário: criar backup e sobrescrever os arquivos originais.' Green }
-            '3' { $draft.outputMode = 'PreservarOriginaisECriarMinificados'; Show-Mensagem 'Modo temporário: preservar os arquivos originais e criar arquivos .min.' Green }
-            '4' { $script:TemporaryAdjustments = $draft; Show-Mensagem 'Ajustes mantidos somente para esta execução.' Green; return }
+            '1' { [void]$script:TemporaryAdjustments.Remove('outputMode'); Show-Mensagem 'Modo temporário definido para a configuração persistente.' Green; return }
+            '2' { $script:TemporaryAdjustments.outputMode = 'BackupESobrescreverOriginais'; Show-Mensagem 'Modo temporário: criar backup e sobrescrever os arquivos originais.' Green; return }
+            '3' { $script:TemporaryAdjustments.outputMode = 'PreservarOriginaisECriarMinificados'; Show-Mensagem 'Modo temporário: preservar os arquivos originais e criar arquivos .min.' Green; return }
             '0' { Show-Mensagem 'Ajustes temporários cancelados; nenhuma alteração foi aplicada.' Yellow; return }
             default { Show-Mensagem 'Escolha inválida; nenhum ajuste foi aplicado. Escolha uma opção numerada.' Yellow }
         }
@@ -214,7 +213,7 @@ function Invoke-PersistentConfiguration {
 
 function Start-MeminifyUi {
     $identity = Invoke-MeminifyBridge @{ command = 'version' }
-    if (-not $identity.ok) { Show-Mensagem 'Não foi possível obter a versão do Meminify.' Red; return }
+    if (-not $identity.ok) { Show-Mensagem "Não foi possível obter a versão do Meminify. $($identity.diagnostic.message)" Red; return }
     Write-Host "`nMEMINIFY v$($identity.version)" -ForegroundColor Cyan
     $script:TemporaryAdjustments = @{}
     while ($true) {
@@ -234,12 +233,11 @@ function Start-MeminifyUi {
                 '2' {
                     $analysis = Invoke-Analyze $script:TemporaryAdjustments
                     if ($null -eq $analysis -or $analysis.status -ne 'ready') { Show-Mensagem 'A minificação foi bloqueada pela pré-análise.' Red; break }
-                    if ($analysis.riskAssessment.status -eq 'unavailable' -and -not (Confirmar-Acao 'A autorização de risco da execução ainda não possui estimativa implementada. Autorizar explicitamente esta execução')) { Show-Mensagem 'Execução cancelada.' Yellow; break }
                     if (-not (Confirmar-Acao 'Confirmar a minificação do escopo exibido')) { Show-Mensagem 'Execução cancelada.' Yellow; break }
                     $overwrite = $true
                     if ($analysis.conflicts.Count -gt 0) { $overwrite = Confirmar-Acao 'Autorizar globalmente a sobrescrita de todos os destinos .min listados' }
                     if (-not $overwrite) { Show-Mensagem 'Execução cancelada; nenhum arquivo foi alterado.' Yellow; break }
-                    $response = Invoke-MeminifyBridge @{ command = 'execute'; adjustments = $script:TemporaryAdjustments; confirmed = $true; authorizeOverwriteConflicts = $true; riskAssessment = @{ authorized = $true; status = 'explicitly-authorized'; reason = 'USER_CONFIRMATION_WITHOUT_EXECUTION_RISK_ESTIMATE' } }
+                    $response = Invoke-MeminifyBridge @{ command = 'execute'; adjustments = $script:TemporaryAdjustments; confirmed = $true; authorizeOverwriteConflicts = $true }
                     if ($response.ok -and $response.result.status -eq 'completed') { Show-Mensagem 'Minificação concluída.' Green } elseif ($response.ok -and $response.result.status -eq 'cancelled') { Show-Mensagem 'Execução cancelada.' Yellow } else { Show-Mensagem "Falha: $($response.diagnostic.message)" Red }
                 }
                 '3' { Invoke-TemporaryAdjustment }

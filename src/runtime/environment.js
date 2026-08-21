@@ -77,14 +77,14 @@ export async function bootstrapEnvironment({
     if (!runtime.valid) return { ok: false, code: runtime.code, message: `O Node.js instalado não passou na validação: ${runtime.message}`, runtime };
   }
   let dependencies = await validateProjectDependencies({ projectRoot });
-  let installed = false;
   if (!dependencies.valid) {
-    const npm = runtime.npmCommand ?? 'npm.cmd';
-    const install = await commandRunner(npm, ['ci'], { cwd: projectRoot, timeout: 600000 });
-    if (install.code !== 0) return { ok: false, code: 'DEPENDENCY_INSTALL_FAILED', message: 'npm.cmd ci falhou; as dependências não foram consideradas válidas.', install, runtime, dependencies };
-    installed = true;
-    dependencies = await validateProjectDependencies({ projectRoot });
-    if (!dependencies.valid) return { ok: false, code: 'DEPENDENCY_VALIDATION_FAILED', message: 'As dependências continuam inconsistentes após npm.cmd ci.', runtime, dependencies };
+    return {
+      ok: false,
+      code: 'DEPENDENCY_VALIDATION_FAILED',
+      message: 'As dependências internas do pacote estão ausentes ou inconsistentes. Reextraia uma distribuição íntegra do Meminify; a inicialização normal não instala dependências automaticamente.',
+      runtime,
+      dependencies,
+    };
   }
-  return { ok: true, runtime, dependencies, installed, message: 'Ambiente: OK' };
+  return { ok: true, runtime, dependencies, installed: false, message: 'Ambiente: OK' };
 }

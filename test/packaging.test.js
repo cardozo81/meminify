@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { copyFile, cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
@@ -22,9 +22,9 @@ async function fixture() {
   return root;
 }
 
-function runProcess(file, args, { cwd, input = '' } = {}) {
+function runProcess(file, args, { cwd, input = '', env = {}, shell = false } = {}) {
   return new Promise((resolveProcess, reject) => {
-    const child = spawn(file, args, { cwd, windowsHide: true });
+    const child = spawn(file, args, { cwd, windowsHide: true, env: { ...process.env, ...env }, shell });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
@@ -72,7 +72,7 @@ test('montagem valida documentação e falha com obrigatório ausente ou proibid
     await copyFile(join(root, 'LEIA-ME.txt'), join(metadata.packageRoot, 'LEIA-ME.txt'));
     await writeFile(join(metadata.packageRoot, 'LEIA-ME.txt'), `configuração minificação execução usuário não restauração relatório ${String.fromCharCode(0xC3, 0xA7)}`, 'utf8');
     await assert.rejects(validatePackagedTree({ projectRoot: root, packageRoot: metadata.packageRoot, version: metadata.version }), /Mojibake confirmado/);
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); }
 });
 
 test('pacote isolado resolve versão e inicia fora do repositório em caminho com espaços', async () => {
@@ -81,7 +81,23 @@ test('pacote isolado resolve versão e inicia fora do repositório em caminho co
   const failureRoot = await mkdtemp(join(tmpdir(), 'Meminify 13C failure '));
   try {
     const metadata = await assemblePackage(root);
-    await cp(join(projectRoot, 'node_modules'), join(metadata.packageRoot, 'node_modules'), { recursive: true });
+    assert.equal((await readFile(join(metadata.packageRoot, 'node_modules', 'esbuild', 'package.json'), 'utf8')).includes('0.28.2'), true);
+    const cmdBytes = await readFile(join(metadata.packageRoot, 'Executar.cmd'));
+    for (let index = 0; index < cmdBytes.length; index += 1) if (cmdBytes[index] === 0x0A) assert.equal(cmdBytes[index - 1], 0x0D);
+    const npmLogPath = join(cwd, 'npm-invocations.log');
+    await writeFile(join(cwd, 'npm.cmd'), `@echo off\r\necho %*>>"${npmLogPath}"\r\nif "%1"=="--version" echo 11.11.0\r\n`, 'utf8');
+    const cmdPath = join(metadata.packageRoot, 'Executar.cmd');
+    const cmdStartup = await runProcess(`"${cmdPath}"`, [], { cwd, input: '0\r\n', env: { PSExecutionPolicyPreference: 'RemoteSigned' }, shell: true });
+    assert.equal(cmdStartup.code, 0, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
+    assert.equal((cmdStartup.stdout.match(/MEMINIFY v0\.1\.0/g) ?? []).length, 1, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
+    assert.doesNotMatch(cmdStartup.stdout, /tlocal|não é reconhecido como um comando/i);
+    const npmInvocations = (await readFile(npmLogPath, 'utf8')).split(/\r?\n/).filter(Boolean);
+    assert.deepEqual(npmInvocations, ['--version']);
+    const restricted = await runProcess(`"${cmdPath}"`, [], { cwd, input: '\r\n', env: { PSExecutionPolicyPreference: 'Restricted' }, shell: true });
+    assert.equal(restricted.code, 1);
+    assert.match(restricted.stdout, /política de execução do Windows PowerShell não permite executar scripts locais/i);
+    assert.match(restricted.stdout, /Manual-Usuario\\index\.html/i);
+    assert.doesNotMatch(restricted.stdout, /tlocal|não é reconhecido como um comando/i);
     const request = await runProcess(process.execPath, [join(metadata.packageRoot, 'src', 'app', 'bridge.mjs'), '--bridge'], { cwd, input: '{"command":"version"}' });
     assert.equal(request.code, 0);
     assert.equal(JSON.parse(request.stdout).version, '0.1.0');
@@ -107,10 +123,11 @@ test('pacote isolado resolve versão e inicia fora do repositório em caminho co
     assert.equal(persistentUi.code, 0);
     assert.match(persistentUi.stdout, /Preservar os arquivos originais e criar arquivos \.min/);
     assert.match(await readFile(join(metadata.packageRoot, 'Configuracao', 'configuracao.ini'), 'utf8'), /ModoSaida=PreservarOriginaisECriarMinificados/);
-    const temporaryUi = await runProcess(powershell, ['-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File', join(metadata.packageRoot, 'Executar.ps1')], { cwd, input: '3\r\n2\r\n0\r\n1\r\n0\r\n' });
+    const temporaryUi = await runProcess(powershell, ['-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File', join(metadata.packageRoot, 'Executar.ps1')], { cwd, input: '3\r\n2\r\n3\r\nx\r\n0\r\n1\r\n0\r\n' });
     assert.equal(temporaryUi.code, 0);
-    assert.match(temporaryUi.stdout, /Ajustes temporários cancelados/);
-    assert.match(temporaryUi.stdout, /Modo: PreservarOriginaisECriarMinificados/);
+    assert.match(temporaryUi.stdout, /Modo temporário: criar backup e sobrescrever os arquivos originais/);
+    assert.match(temporaryUi.stdout, /Ajustes temporários cancelados; nenhuma alteração foi aplicada/);
+    assert.match(temporaryUi.stdout, /Modo: BackupESobrescreverOriginais/);
     assert.doesNotMatch(await readFile(join(metadata.packageRoot, 'Configuracao', 'configuracao.ini'), 'utf8'), /ModoSaida=BackupESobrescreverOriginais/);
     const analyzed = JSON.parse((await requestBridge({ command: 'analyze' })).stdout);
     assert.equal(analyzed.ok, true);
@@ -121,9 +138,9 @@ test('pacote isolado resolve versão e inicia fora do repositório em caminho co
     assert.equal(failure.code, 1);
     assert.match(failure.stdout, /não foi possível iniciar|encerrado com erro/i);
   } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(cwd, { recursive: true, force: true });
-    await rm(failureRoot, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    await rm(cwd, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    await rm(failureRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 });
 
@@ -142,7 +159,7 @@ test('ZIP contém raiz esperada e checksum SHA-256 corresponde', async () => {
     const hash = createHash('sha256').update(bytes).digest('hex');
     await writeFile(metadata.checksumPath, `${hash}  ${metadata.packageName}.zip\n`, 'utf8');
     assert.equal((await readFile(metadata.checksumPath, 'utf8')).trim().split(/\s+/)[0], hash);
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); }
 });
 
 test('limpeza fora de dist ou com nome inesperado é rejeitada', async () => {

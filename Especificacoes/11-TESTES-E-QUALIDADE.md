@@ -56,5 +56,9 @@
 - codificação e mojibake;
 - logs e relatórios;
 - bootstrap e política de runtime.
+- matriz e determinação obrigatória do risco de execução;
+- bytes CRLF e execução do launcher por `cmd.exe` real;
+- startup offline com dependências de runtime geradas por instalação limpa;
+- bloqueio legível sob Execution Policy que não permita scripts locais.
 
 Nenhum desses testes deve ser criado antes da funcionalidade correspondente.

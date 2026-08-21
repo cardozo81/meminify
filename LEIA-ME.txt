@@ -9,10 +9,22 @@ Como iniciar
 - Na primeira execução, o programa valida o Node.js e as dependências. Se o
   Node.js estiver ausente, a instalação homologada pode ser oferecida com sua
   autorização explícita.
+- As dependências necessárias já acompanham a distribuição. Com Node.js
+  homologado presente, o início normal é offline e nunca executa npm ci ou npm
+  install. Dependência ausente ou inválida bloqueia e exige reextrair um pacote
+  íntegro.
+- A política de segurança do Windows PowerShell deve permitir scripts locais.
+  O Meminify não usa Bypass nem altera essa política. Sob Restricted, o
+  Executar.cmd encerra com erro e mantém a orientação visível. Mudanças de
+  política, quando cabíveis, devem ser feitas explicitamente pelo usuário ou
+  administrador conforme as regras da máquina/organização.
 
 Uso seguro
 - Analise os arquivos antes de minificar. Nenhum arquivo é alterado sem a sua
   confirmação explícita.
+- A análise sempre mostra risco determinístico da execução: Baixo, Moderado,
+  Alto ou Crítico. Se o risco não puder ser calculado, a execução é bloqueada;
+  não existe autorização para continuar sem essa classificação.
 - Criar backup e sobrescrever os arquivos originais é o modo persistente padrão;
   ele valida um backup antes de substituir o original.
 - Preservar os arquivos originais e criar arquivos .min mantém a fonte e cria
@@ -44,3 +56,6 @@ Ajuda
 O manual offline do usuário está em Documentacao\Gerada\Manual-Usuario\index.html.
 Se houver configuração inválida, origem inacessível ou recovery-required, não
 force a operação: consulte o menu, os relatórios e os logs técnicos.
+Se o Windows PowerShell informar política Restricted ou bloqueio de scripts
+locais, consulte "Problemas comuns" no Manual do Usuário offline. O Meminify
+não altera a política de segurança do computador.

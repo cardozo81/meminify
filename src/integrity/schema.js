@@ -28,6 +28,7 @@ export function validateRecord(record, code, label) {
   for (const field of ['sourceSize', 'minifiedSize']) {
     if (!isNullableSize(record[field])) throw new IntegrityError(code, `${label}.${field} deve ser inteiro não negativo ou null.`);
   }
+  if (record.executionRisk !== undefined && !isNullableString(record.executionRisk)) throw new IntegrityError(code, `${label}.executionRisk deve ser texto ou null.`);
 }
 
 export function validateManifestEntry(entry, index) {
@@ -40,6 +41,7 @@ export function validateManifestEntry(entry, index) {
   for (const field of ['engine', 'engineVersion', 'profile', 'minificationDate']) {
     if (!isNullableString(entry[field])) throw new IntegrityError(code, `${label}.${field} deve ser texto ou null.`);
   }
+  if (entry.executionRisk !== undefined && !isNullableString(entry.executionRisk)) throw new IntegrityError(code, `${label}.executionRisk deve ser texto ou null.`);
   if (!Number.isSafeInteger(entry.originalSize) || entry.originalSize < 0) throw new IntegrityError(code, `${label}.originalSize deve ser inteiro não negativo.`);
   if (!SHA256_PATTERN.test(entry.originalSha256)) throw new IntegrityError(code, `${label}.originalSha256 deve ser SHA-256 hexadecimal minúsculo.`);
   if (!isNullableSize(entry.minifiedSize)) throw new IntegrityError(code, `${label}.minifiedSize deve ser inteiro não negativo ou null.`);

@@ -15,6 +15,7 @@ export function createBackupManifestEntry(backup, metadata = {}) {
     engine: metadata.engine ?? null,
     engineVersion: metadata.engineVersion ?? null,
     profile: metadata.profile ?? null,
+    executionRisk: metadata.executionRisk ?? null,
     originalSize: backup.originalSize,
     originalSha256: backup.originalSha256,
     minifiedSize: metadata.minifiedSize ?? null,
