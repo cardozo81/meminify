@@ -1,9 +1,130 @@
-# Backup, restauração e rollback
+# Backup, estado técnico, restauração e rollback
 
-## Propósito
+## Estado técnico
 
-Este documento definirá os mecanismos de preservação, restauração e reversão necessários para proteger arquivos durante futuras operações.
+O estado técnico é separado do INI e tem localização planejada em `Dados\estado.json`. SHA-256 é a prova primária de integridade.
 
-## Escopo atual
+O estado deve registrar informação suficiente para comprovar e recuperar operações, incluindo, conforme aplicável:
 
-Os requisitos autoritativos de backup e recuperação serão consolidados na próxima tarefa de especificação. Nenhuma estratégia operacional deve ser presumida antes disso.
+- caminhos de origem e saída;
+- hashes da origem e do resultado;
+- data da minificação;
+- motor e versão do motor;
+- tamanho minificado;
+- modo de saída;
+- metadados adicionais necessários à recuperação.
+
+Para um original sobrescrito, a detecção confiável de “já minificado” exige:
+
+`SHA-256 atual == SHA-256 minificado registrado`
+
+Timestamps não são prova primária, e aparência visual não comprova estado. A troca de motor não autoriza reminificar diretamente um arquivo comprovadamente já minificado; quando aplicável, a fonte original deve ser restaurada primeiro.
+
+## `BackupESobrescreverOriginais`
+
+O backup guarda somente a fonte não minificada imediatamente antes de sua sobrescrita. Uma versão minificada nunca pode ser usada como backup de fonte.
+
+O diretório neutro de backup é `_source_versions`. A sequência obrigatória é:
+
+`fonte` → `SHA-256 da fonte` → `criar backup` → `validar existência do backup` → `validar SHA-256 do backup` → `minificar em memória/temporário` → `validar resultado` → `SHA-256 final` → `substituição segura no mesmo caminho` → `atualizar estado`
+
+Falha crítica em qualquer prova anterior à substituição impede a sobrescrita.
+
+Um arquivo já minificado e inalterado não recebe novo backup, não é minificado, não é sobrescrito e deve ser reportado.
+
+## Organização e manifesto de backup
+
+Várias raízes de origem não podem colidir no backup. Cada execução usa pasta e identificadores de origem, por exemplo:
+
+```text
+_source_versions\
+  20260821_101500\
+    origem-001\
+    origem-002\
+    manifest.json
+```
+
+O manifesto deve mapear os identificadores às raízes originais e registrar, no mínimo:
+
+- ID da execução;
+- timestamp;
+- versão do Meminify;
+- origem original;
+- caminho absoluto original;
+- caminho relativo no backup;
+- motor e versão;
+- perfil;
+- tamanhos original e minificado;
+- SHA-256 original e minificado;
+- status;
+- data da minificação.
+
+## Restauração de backup
+
+O modo de sobrescrita deve permitir listar backups conhecidos e selecionar manualmente uma pasta de backup. Antes da restauração, devem ser validados manifesto, arquivos, hashes, destino e integridade.
+
+A restauração repõe a fonte não minificada no caminho original. O arquivo atualmente minificado não deve receber backup antes dessa restauração.
+
+Se o arquivo atual mudou depois da minificação, isto é:
+
+`SHA-256 atual != SHA-256 minificado registrado`
+
+o usuário deve ser avisado e confirmar explicitamente a sobrescrita das mudanças atuais. Sem confirmação, esse arquivo não é restaurado.
+
+## Conflitos de destino no modo `.min`
+
+Antes de qualquer escrita, todos os destinos planejados devem ser calculados e verificados.
+
+Se um ou mais destinos `.min` já existirem, a interface deve listar todos os conflitos, mostrar os caminhos exatos e pedir uma única confirmação global que autorize suas sobrescritas. Nenhum processamento começa antes dessa decisão.
+
+Sem confirmação, toda a execução é cancelada e nenhum arquivo sem conflito pode permanecer gerado. A detecção deve ocorrer antes de mutações para que o cancelamento normalmente não exija limpeza.
+
+Se surgir um conflito novo e não autorizado entre a pré-análise e a escrita, a autorização anterior não se estende a ele. A execução deve abortar, reverter transacionalmente as mudanças da tentativa atual e reportar.
+
+## Transação no modo `.min`
+
+A execução deve ser transacional até onde for tecnicamente comprovável:
+
+`todas as mutações planejadas têm sucesso` **ou** `as mudanças desta execução são revertidas`
+
+Cada mutação deve ser rastreada exatamente. Limpezas com curingas, como excluir `*.min.*`, são proibidas.
+
+- Se um destino não existia e foi criado pela tentativa, o rollback exclui exatamente esse arquivo.
+- Se um destino existia e sua sobrescrita foi autorizada, seu conteúdo anterior e SHA-256 devem ser preservados temporariamente antes da substituição.
+- Se uma etapa posterior falhar, somente os novos destinos desta transação são excluídos, e os destinos preexistentes sobrescritos são restaurados.
+- O rollback deve ser validado e qualquer falha deve ser reportada em modo fail-closed.
+
+Esse rollback de falha não se confunde com a restauração manual de uma execução concluída com sucesso.
+
+## Restauração manual da última execução `.min`
+
+Para a última execução bem-sucedida em `PreservarOriginaisECriarMinificados`, “restaurar última execução” significa excluir somente arquivos `.min` que:
+
+- não existiam antes daquela execução;
+- foram criados por aquela execução;
+- estão registrados exatamente no controle da última execução.
+
+É proibido procurar arquivos por curingas. Um `.min` preexistente cuja sobrescrita foi autorizada não é excluído por essa regra.
+
+Se um novo `.min` registrado já não existir, ele não deve ser recriado e deve ser reportado como ausente. Se seu SHA-256 atual diferir do registrado na criação, ele não pode ser excluído automaticamente: o usuário deve ser avisado de que houve alteração e confirmar explicitamente. Sem confirmação, o arquivo permanece.
+
+## Controle da última execução
+
+O controle técnico dedicado tem localização conceitual em `Dados\Restauracao\ultima-execucao.bkp`. A extensão `.bkp` identifica um controle de recuperação e não implica cópia binária de fontes; internamente pode ser usado um formato estruturado UTF-8, como JSON.
+
+O controle deve conter informação suficiente para desfazer somente os efeitos permitidos da última execução, incluindo, conforme aplicável:
+
+- versão do formato;
+- ID e timestamp da execução;
+- versão do Meminify;
+- modo de saída e status da execução;
+- caminhos exatos de origem e destino;
+- tipo da operação;
+- valores SHA-256 relevantes;
+- referência de backup ou recuperação.
+
+Devem ser diferenciados, no mínimo, “saída criada nesta execução” e “saída preexistente sobrescrita”.
+
+O rastreamento deve sobreviver suficientemente a uma execução parcial para impedir alterações não rastreadas. Detalhes de persistência resistente a falhas serão decididos na implementação, preservando a garantia:
+
+**Nenhuma mutação confirmada no sistema de arquivos pode existir sem rastreamento recuperável correspondente.**

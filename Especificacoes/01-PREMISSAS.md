@@ -2,20 +2,28 @@
 
 ## Produto
 
-- O Meminify é uma aplicação direcionada ao Windows.
-- Uma interface interativa em PowerShell está planejada.
-- O runtime planejado é Node.js.
-- O produto realizará minificação controlada de JavaScript e CSS.
-- A arquitetura de motores de minificação será modular.
-- O esbuild é o primeiro motor planejado para homologação.
+O Meminify é uma ferramenta para Windows destinada à minificação controlada e segura de arquivos JavaScript e CSS. A direção arquitetural aprovada é:
 
-## Segurança e prioridade
+`interface interativa em PowerShell` → `aplicação Node.js` → `núcleo` → `abstração neutra de minificador` → `adaptadores homologados`
 
-O comportamento é fail-closed: somente uma regra explícita apoiada por um estado comprovado autoriza uma ação. Diante de ambiguidade ou estado não comprovado, nada deve ser modificado e a condição deve ser relatada.
+O motor, os tipos suportados e os limites de minificação são definidos em `07-MINIFICACAO-E-MOTORES.md`.
 
-Princípio aprovado: **“Nenhuma conveniência de UX poderá reduzir as proteções de integridade.”**
+## Regra fundamental
 
-A ordem definitiva de prioridades do produto é:
+```text
+CERTEZA + REGRA EXPLÍCITA
+→ EXECUTA
+
+DÚVIDA / AMBIGUIDADE / ESTADO NÃO COMPROVADO
+→ NÃO MODIFICA
+→ REPORTA
+```
+
+Princípio obrigatório: **“Nenhuma conveniência de UX poderá reduzir as proteções de integridade.”**
+
+As condutas proibidas e as proteções específicas estão em `10-SEGURANCA-E-INTEGRIDADE.md`.
+
+## Prioridades do produto
 
 1. Integridade dos arquivos
 2. Segurança e comportamento explícito
@@ -30,15 +38,21 @@ A ordem definitiva de prioridades do produto é:
 ## Idioma e codificação
 
 - Todo conteúdo destinado a pessoas deve ser escrito em pt-BR.
-- Arquivos textuais devem usar UTF-8.
+- Identificadores internos de código podem usar EN-US.
+- Todo texto deve usar UTF-8; mojibake é proibido.
 - Acentos, `ç` e demais caracteres do português devem ser preservados corretamente.
-- Mojibake é proibido; problemas de codificação devem ser corrigidos na origem.
+- Entrada e saída textual em Node.js devem declarar UTF-8 explicitamente.
+- A codificação em PowerShell e Windows deve receber validação específica.
+- A futura documentação HTML deve conter `<meta charset="utf-8">` e `<html lang="pt-BR">`.
 
 ## Desenvolvimento
 
-- O desenvolvimento é incremental e assistido por IA.
-- O fluxo atual trabalha diretamente na branch `main`.
-- Testes e validações devem ser focados e proporcionais ao comportamento alterado.
-- Branches desnecessárias não devem ser criadas.
-- Diretórios vazios e placeholders de arquitetura futura não devem inflar o scaffold.
-- Commits e pushes são feitos apenas em pontos coerentes, significativos e validados.
+- O desenvolvimento é incremental, conduzido por uma única pessoa e assistido por IA.
+- O fluxo atual trabalha diretamente na branch `main`, sem uma branch por tarefa e sem pull request.
+- Testes e validações devem ser focados e proporcionais ao comportamento introduzido.
+- A estrutura do repositório cresce somente quando necessária; diretórios vazios e placeholders de arquitetura futura são proibidos.
+- Commits e pushes são feitos apenas em checkpoints coerentes, significativos e validados.
+- Prompts para IA devem ser concisos e normalmente podem usar EN-US.
+- `AGENTS.md`, `_ias/INDEX.md` e estas especificações reduzem repetição de contexto e orientam os agentes às fontes autoritativas.
+
+O fluxo Git completo está em `12-GIT-E-RELEASE.md`, e a política de qualidade está em `11-TESTES-E-QUALIDADE.md`.

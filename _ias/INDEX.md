@@ -4,18 +4,20 @@ Este arquivo direciona cada área à sua fonte autoritativa. Leia somente os doc
 
 | Área | Especificações autoritativas |
 | --- | --- |
-| Premissas gerais | `Especificacoes/01-PREMISSAS.md` |
-| Comportamento funcional | `Especificacoes/02-REQUISITOS-FUNCIONAIS.md`; `Especificacoes/03-REGRAS-NEGOCIO.md` |
-| Arquitetura | `Especificacoes/04-ARQUITETURA.md` |
-| PowerShell, CLI e UX | `Especificacoes/05-UX-CLI.md`; `Especificacoes/10-SEGURANCA-E-INTEGRIDADE.md` |
-| Configuração, INI, fontes e regras de glob | `Especificacoes/06-CONFIGURACAO.md`; `Especificacoes/03-REGRAS-NEGOCIO.md`; `Especificacoes/10-SEGURANCA-E-INTEGRIDADE.md` |
-| Minificação e motores | `Especificacoes/07-MINIFICACAO-E-MOTORES.md`; `Especificacoes/04-ARQUITETURA.md`; `Especificacoes/10-SEGURANCA-E-INTEGRIDADE.md` |
-| Backup, restauração e rollback | `Especificacoes/08-BACKUP-E-ROLLBACK.md`; `Especificacoes/10-SEGURANCA-E-INTEGRIDADE.md`; `Especificacoes/11-TESTES-E-QUALIDADE.md` |
+| Premissas, idioma e prioridades | `Especificacoes/01-PREMISSAS.md` |
+| Comportamento funcional | `Especificacoes/02-REQUISITOS-FUNCIONAIS.md` |
+| Seleção, glob, precedência e nomes `.min` | `Especificacoes/03-REGRAS-NEGOCIO.md` |
+| Arquitetura e limites de componentes | `Especificacoes/04-ARQUITETURA.md` |
+| PowerShell, UX, risco e pré-análise | `Especificacoes/05-UX-CLI.md` |
+| INI, origens, configuração temporária e modo de saída | `Especificacoes/06-CONFIGURACAO.md` |
+| Minificadores, perfis, esbuild, Node.js e bootstrap | `Especificacoes/07-MINIFICACAO-E-MOTORES.md` |
+| Estado técnico, backup, SHA-256, restauração e transações | `Especificacoes/08-BACKUP-E-ROLLBACK.md` |
 | Logs e relatórios | `Especificacoes/09-LOGS-E-RELATORIOS.md` |
+| Segurança do sistema de arquivos e fail-closed | `Especificacoes/10-SEGURANCA-E-INTEGRIDADE.md` |
 | Testes e qualidade | `Especificacoes/11-TESTES-E-QUALIDADE.md` |
-| Git e releases | `Especificacoes/12-GIT-E-RELEASE.md` |
-| Distribuição | `Especificacoes/13-DISTRIBUICAO.md` |
+| Git, versionamento e releases | `Especificacoes/12-GIT-E-RELEASE.md` |
+| Pacote e distribuição | `Especificacoes/13-DISTRIBUICAO.md` |
 | Documentação | `Especificacoes/14-DOCUMENTACAO.md` |
-| Decisões aprovadas | `Especificacoes/15-DECISOES.md` |
+| Decisões aprovadas e pendentes | `Especificacoes/15-DECISOES.md` |
 
 O mapa dos arquivos efetivamente implementados fica em `_ias/MAPA-CODIGO.md`.

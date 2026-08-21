@@ -2,19 +2,23 @@
 
 ## Fluxo atual aprovado
 
-- `main` é a branch ativa de desenvolvimento no fluxo atual, conduzido por uma única pessoa com assistência de IA.
-- Não se cria uma branch para cada funcionalidade, prompt, correção ou alteração documental.
+- O desenvolvimento é conduzido por uma única pessoa com assistência de IA.
+- `main` é a branch ativa de desenvolvimento.
+- Não se cria uma branch por prompt, funcionalidade, correção ou alteração documental.
 - Branches não são criadas automaticamente.
-- O fluxo atual não utiliza pull requests.
+- O fluxo atual não utiliza pull requests; sua introdução exige necessidade futura concreta.
 - Git é usado para histórico, checkpoints, rastreabilidade e recuperação.
 - Somente mudanças coerentes, significativas e validadas devem ser commitadas.
-- Mensagens de commit devem ser escritas em pt-BR, com acentos e `ç` preservados corretamente.
 - O push deve ser feito para `origin/main` quando a tarefa concluída representar um checkpoint remoto útil.
 - Estados sabidamente quebrados, incompletos ou não validados não devem ser enviados.
+- Mensagens de commit e comentários destinados a pessoas devem ser escritos em pt-BR, UTF-8, com acentos e `ç` corretos.
 - Force-push nunca deve ser usado, salvo pedido explícito em uma tarefa futura.
-- Tags poderão identificar futuras releases ou marcos.
-- A estratégia de branches só poderá ser reconsiderada se as circunstâncias do projeto mudarem materialmente.
+- A estrutura do repositório deve crescer incrementalmente, sem placeholders vazios para arquitetura futura.
 
-## Releases
+Testes e validações aplicáveis ao checkpoint seguem `11-TESTES-E-QUALIDADE.md`.
 
-Os requisitos autoritativos de versionamento e publicação serão consolidados em tarefa futura. Nenhuma automação de release está aprovada nesta fase.
+## Versionamento e marcos
+
+Tags poderão identificar releases ou marcos futuros. A estratégia de branches só pode ser reconsiderada se as circunstâncias do projeto mudarem materialmente.
+
+O empacotamento local segue `13-DISTRIBUICAO.md`. A publicação futura de GitHub Release é uma operação separada e não pode ser misturada à geração do pacote local.
