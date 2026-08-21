@@ -15,4 +15,4 @@ No fluxo atual, uma única pessoa trabalha diretamente na branch `main`. Git reg
 - [`_ias/MAPA-CODIGO.md`](_ias/MAPA-CODIGO.md): mapa evolutivo da implementação.
 - [`CHANGELOG.md`](CHANGELOG.md): alterações relevantes do projeto.
 
-Já existe a fundação inicial de domínio e configuração, o contrato neutro de minificação, o registro homologado e o adapter esbuild para JavaScript e CSS. Scanner, glob, backup, interface PowerShell e orquestração completa ainda não estão implementados.
+Já existe a fundação inicial de domínio e configuração, o contrato neutro de minificação, o registro homologado, o adapter esbuild para JavaScript e CSS e um scanner read-only com glob, exclusões técnicas e deduplicação. Backup, interface PowerShell e orquestração completa ainda não estão implementados.
