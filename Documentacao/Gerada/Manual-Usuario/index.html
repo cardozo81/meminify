@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual do Usuário — Meminify</title>
+<style>
+:root { color-scheme: light; font-family: "Segoe UI", Arial, sans-serif; line-height: 1.55; color: #17212b; background: #f6f8fa; }
+body { max-width: 920px; margin: 0 auto; padding: 2rem; background: #fff; }
+h1, h2, h3 { color: #005a9c; line-height: 1.2; }
+h1 { border-bottom: 2px solid #005a9c; padding-bottom: .5rem; }
+code, pre { font-family: Consolas, "Courier New", monospace; }
+code { background: #eef2f5; padding: .1rem .25rem; border-radius: 3px; }
+pre { background: #17212b; color: #f8f8f2; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+ul { padding-left: 1.5rem; }
+a { color: #005a9c; }
+
+</style>
+</head>
+<body>
+<h1>Manual do Usuário — Meminify</h1>
+<h2>Finalidade e segurança</h2>
+<p>O Meminify minifica arquivos JavaScript e CSS no Windows. Toda alteração exige confirmação explícita, validação prévia e prova de integridade por SHA-256. Em dúvida, erro de configuração, origem inacessível ou estado técnico não comprovado, a operação é bloqueada.</p>
+<p>Não existe risco zero. O risco do perfil é exibido separadamente; o algoritmo final de risco da execução ainda não está disponível.</p>
+<h2>Requisitos e primeira execução</h2>
+<ul>
+<li>Windows com Windows PowerShell.</li>
+<li>Node.js LTS homologado: linhas 24 ou 22; a linha 24 é preferida.</li>
+<li>Dependências locais do projeto.</li>
+</ul>
+<p>Execute <code>Executar.ps1</code> na raiz. O bootstrap valida Node, npm, <code>package.json</code>, <code>package-lock.json</code> e dependências. Se Node estiver ausente ou não homologado, pode oferecer a instalação exata autorizada via winget. Recusar a instalação não altera o sistema.</p>
+<p>Após o bootstrap, o menu oferece análise, minificação, ajuste temporário, configurações, backups/restauração, relatórios e logs técnicos.</p>
+<h2>Configuração</h2>
+<p>A configuração persistente é <code>Configuracao\configuracao.ini</code>; o modelo versionado é <code>Configuracao\configuracao.ini.example</code>. Se o arquivo real não existir, o menu informa o caminho e só o cria a partir do modelo após confirmação. Ele nunca sobrescreve uma configuração existente.</p>
+<p>O arquivo INI usa listas numeradas, por exemplo:</p>
+<pre><code>[Configuracao]
+Motor=esbuild
+Perfil=Padrao
+ModoSaida=BackupESobrescreverOriginais
+Incluir01=**/*.js
+Excluir01=node_modules
+
+[Origem.001]
+Tipo=Diretorio
+Caminho=C:\Projetos\exemplo
+ExecutarPorPadrao=true
+Recursivo=true
+Modo=Todos
+Incluir01=*.js</code></pre>
+<p>Use <code>Incluir01</code>, <code>Incluir02</code> e <code>Excluir01</code>; listas por ponto e vírgula, chaves repetidas, valores inválidos ou o perfil <code>Personalizado</code> bloqueiam o avanço. O perfil <code>Personalizado</code> permanece indisponível enquanto seu schema estiver pendente.</p>
+<h3>Origens, recursão e padrões</h3>
+<p>As origens podem ser diretórios ou arquivos explícitos. Para diretórios, <code>Recursivo=true</code> ou <code>Recursivo=false</code> é obrigatório. Os modos são <code>Todos</code>, <code>Selecionados</code> e <code>Arquivo</code> (somente para origem de arquivo). Inclusões e exclusões globais e por origem são avaliadas pelo scanner; links, arquivos somente leitura, extensões não suportadas e exclusões técnicas são ignorados com motivo.</p>
+<h3>Modos de saída e perfis</h3>
+<p><code>BackupESobrescreverOriginais</code> cria e valida uma cópia em <code>_source_versions</code> antes de substituir o original. <code>PreservarOriginaisECriarMinificados</code> conserva a fonte e cria um destino <code>.min.js</code> ou <code>.min.css</code> ao lado dela.</p>
+<p>Os perfis disponíveis são <code>Conservador</code> (risco muito baixo), <code>Padrao</code> (baixo) e <code>Maximo</code> (moderado). O motor homologado atual é esbuild para JavaScript e CSS, sem bundling.</p>
+<h2>Analisar e minificar</h2>
+<p>Escolha **Analisar arquivos** para ver origens efetivas, recursão, modo de saída, perfil, risco do perfil, encontrados, elegíveis, ignorados, conflitos <code>.min</code>, avisos e bloqueios. A análise não modifica arquivos.</p>
+<p>**Minificar** sempre refaz a pré-análise. Antes de qualquer escrita, o menu mostra o escopo e solicita confirmação. Como não há algoritmo final de risco de execução, a interface deixa essa ausência clara e pede autorização explícita adicional; ela não declara risco zero.</p>
+<p>Se um destino <code>.min</code> já existir, todos os conflitos são listados e uma autorização global específica é exigida. Recusar cancela a execução inteira sem gerar saídas parciais.</p>
+<h2>Ajustes temporários</h2>
+<p>O menu atual permite ajustar o modo de saída somente para a execução atual. O ajuste fica em memória e não modifica o INI. Fechar o programa descarta o ajuste.</p>
+<h2>Backups e restauração manual</h2>
+<p>No modo de sobrescrita, a restauração lista backups válidos em <code>_source_versions</code> e também aceita uma pasta exata informada manualmente. O manifesto, a cópia de backup, os hashes, os caminhos e o estado técnico são validados antes de formar um plano.</p>
+<p>Se o arquivo atual ainda corresponde ao hash minificado registrado, basta a confirmação normal. Se foi alterado ou está ausente, há uma confirmação adicional; recusá-la preserva esse item. O arquivo minificado atual não recebe backup durante a restauração.</p>
+<p>No modo <code>.min</code>, a opção restaura somente a última execução concluída removendo exatamente saídas que foram criadas nela. Saídas <code>.min</code> preexistentes e sobrescritas não são removidas nem restauradas. Uma saída já ausente é apenas reportada; uma saída alterada após a criação exige confirmação adicional antes da exclusão.</p>
+<p>Uma restauração interrompida ou ambígua entra em <code>recovery-required</code>. Nesse estado, não force nova minificação ou restauração: preserve os arquivos, consulte os logs e corrija o estado somente por um procedimento comprovado.</p>
+<h2>Relatórios e logs</h2>
+<p>Após análise, execução ou restauração, o Meminify pode gerar relatórios operacionais UTF-8 em <code>Dados\Relatorios</code> (TXT e CSV) e logs técnicos UTF-8 em <code>Dados\Logs</code>. O menu permite listar e visualizar esses arquivos em modo somente leitura.</p>
+<p>Relatórios mostram totais, itens ignorados com motivo, resultados de restauração e falhas. Logs técnicos podem conter caminhos, diagnósticos e stack traces; eles não são exibidos como mensagem normal do menu.</p>
+<h2>Problemas comuns</h2>
+<ul>
+<li>**Configuração ausente ou inválida:** corrija <code>Configuracao\configuracao.ini</code> ou crie-o explicitamente a partir do modelo.</li>
+<li>**Origem inacessível, link ou arquivo somente leitura:** o scanner informa o motivo e bloqueia quando o escopo não pode ser comprovado.</li>
+<li>**Conflito <code>.min</code>:** revise a lista e confirme globalmente somente se aceitar sobrescrever todos os destinos listados.</li>
+<li>**Node não homologado:** instale uma linha LTS homologada; não use versões Current, EOL ou globais.</li>
+<li>**<code>recovery-required</code>:** não tente contornar o bloqueio; consulte o log técnico e preserve o estado para recuperação comprovada.</li>
+</ul>
+</body>
+</html>

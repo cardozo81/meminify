@@ -101,6 +101,16 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/restore.test.js` | Testes temporários de integridade, confirmações, `.min`, falha parcial e cancelamento | Bridge e núcleo de restauração |
 | `src/runtime/paths.js` | Inclui o caminho técnico do journal de restauração manual | Node.js `path` |
 
+## Documentação offline
+
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `Documentacao/Fonte/Manual-Usuario/README.md` | Manual de uso em Markdown autoritativo | Funcionalidades implementadas |
+| `Documentacao/Fonte/Manual-Tecnico/README.md` | Manual técnico em Markdown autoritativo | Mapa do código e contratos implementados |
+| `Documentacao/Assets/manual.css` | Estilo local compartilhado dos manuais HTML | Nenhuma |
+| `scripts/docs/build-docs.mjs` | Build HTML offline determinístico para os dois manuais | Node.js `fs/promises` |
+| `test/docs.test.js` | Testes focados de geração HTML, UTF-8 e ausência de dependência externa | Build de documentação |
+
 ## Qualidade e testes
 
 | Arquivo | Responsabilidade | Dependências relevantes |

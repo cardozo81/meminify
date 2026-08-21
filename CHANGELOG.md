@@ -11,3 +11,5 @@
 - Fundação de integridade com SHA-256 incremental, estado técnico, manifesto UTF-8 e backup de fontes validado por hash.
 - Pré-análise imutável e execução transacional dos dois modos, com journal write-ahead, conflitos globais, rollback exato e recuperação de interrupções.
 - Política Node.js homologada e bootstrap Windows leve, com instalação winget autorizada e validação reproduzível de npm/dependências.
+- Interface PowerShell, bridge JSON, logs técnicos, relatórios operacionais e restauração manual segura.
+- Manuais do usuário e técnico em Markdown, com build HTML offline local.

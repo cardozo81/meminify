@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check:encoding": "node scripts/quality/check-encoding.mjs"
+    "check:encoding": "node scripts/quality/check-encoding.mjs",
+    "build:docs": "node scripts/docs/build-docs.mjs"
   },
   "dependencies": {
     "esbuild": "0.28.2",
