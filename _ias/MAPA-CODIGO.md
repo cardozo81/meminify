@@ -40,6 +40,20 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `src/scanner/filesystem.js` | Descoberta read-only, exclusões técnicas, links, permissões e identidades físicas | Node.js `fs/promises`, `path` |
 | `src/scanner/index.js` | Contrato neutro de resultados, classificação JS/CSS, deduplicação e diagnósticos | Módulos do scanner |
 
+## Runtime e integridade
+
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `src/runtime/paths.js` | Caminhos técnicos normativos relativos ao runtime | Node.js `path` |
+| `src/integrity/errors.js` | Erros estruturados de integridade | Nenhuma |
+| `src/integrity/hash.js` | SHA-256 incremental de arquivos | Node.js `crypto`, `fs` |
+| `src/integrity/json-store.js` | Leitura UTF-8 estrita e persistência JSON por arquivo temporário e rename | Node.js built-ins |
+| `src/integrity/schema.js` | Validação dos registros técnicos e entradas de manifesto | Módulos de integridade |
+| `src/integrity/state.js` | Validação e persistência de `Dados/estado.json` | Módulos de integridade |
+| `src/integrity/manifest.js` | Criação, validação e persistência do manifesto de backup | Módulos de integridade |
+| `src/integrity/backup.js` | Mapeamento, cópia e validação SHA-256 do backup de fontes | Node.js `fs/promises`, `path` |
+| `src/integrity/index.js` | API pública da fundação de integridade | Módulos de integridade |
+
 ## Qualidade e testes
 
 | Arquivo | Responsabilidade | Dependências relevantes |
@@ -49,5 +63,6 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/encoding.test.js` | Testes focados de texto UTF-8 e detecção de mojibake | `node:test`, script de encoding |
 | `test/minifiers.test.js` | Testes focados de registry, adapter, perfis, JS, CSS e resultados neutros | `node:test`, adapter esbuild |
 | `test/scanner.test.js` | Testes focados de recursão, glob, exclusões, links, readonly e deduplicação | `node:test`, módulos do scanner |
+| `test/integrity.test.js` | Testes focados de SHA-256, estado, manifesto, backup e diretório temporário | `node:test`, módulos de integridade |
 
-Backup, estado, interface, execução orquestrada e distribuição ainda não existem; não são representados como placeholders neste mapa.
+Interface, execução orquestrada, restauração e distribuição ainda não existem; não são representados como placeholders neste mapa.

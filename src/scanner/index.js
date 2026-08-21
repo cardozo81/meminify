@@ -2,6 +2,7 @@ import { extname } from 'node:path';
 import { collectSourceEntries, isTechnicalExclusion, normalizeAbsolutePath } from './filesystem.js';
 import { ScannerError } from './errors.js';
 import { createSelectionMatcher } from './glob-selection.js';
+import { resolveRuntimePaths } from '../runtime/paths.js';
 
 const SUPPORTED_FILE_TYPES = Object.freeze({
   '.js': 'javascript',
@@ -32,10 +33,9 @@ function ignoredItem(event, fileType, reason, extra = {}) {
   };
 }
 
-export async function scan(configuration, { temporaryDirectory } = {}) {
-  if (!temporaryDirectory) {
-    throw new ScannerError('TEMPORARY_DIRECTORY_REQUIRED', 'O diretório temporário do Meminify deve ser fornecido explicitamente para aplicar a exclusão técnica.');
-  }
+export async function scan(configuration, options = {}) {
+  const temporaryDirectory = options.temporaryDirectory
+    ?? resolveRuntimePaths(options.runtimeRoot).temporaryDirectory;
   if (!configuration || !Array.isArray(configuration.sources)) {
     throw new ScannerError('INVALID_CONFIGURATION', 'A configuração efetiva precisa conter uma lista de origens.');
   }

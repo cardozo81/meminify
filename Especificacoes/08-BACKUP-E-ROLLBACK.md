@@ -2,7 +2,7 @@
 
 ## Estado técnico
 
-O estado técnico é separado do INI e tem localização planejada em `Dados\estado.json`. SHA-256 é a prova primária de integridade.
+O estado técnico é separado do INI e fica em `Dados\estado.json`. O diretório temporário interno do runtime fica em `Dados\Temporarios\`. SHA-256 é a prova primária de integridade.
 
 O estado deve registrar informação suficiente para comprovar e recuperar operações, incluindo, conforme aplicável:
 
