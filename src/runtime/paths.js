@@ -1,4 +1,5 @@
-import { resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const RUNTIME_RELATIVE_PATHS = Object.freeze({
   temporaryDirectory: 'Dados/Temporarios',
@@ -8,12 +9,27 @@ export const RUNTIME_RELATIVE_PATHS = Object.freeze({
   manualRestoreJournal: 'Dados/Restauracao/restauracao-em-andamento.bkp',
 });
 
-export function resolveRuntimePaths(baseDirectory = process.cwd()) {
+export function resolveApplicationRoot(moduleUrl = import.meta.url) {
+  return resolve(dirname(fileURLToPath(moduleUrl)), '..', '..');
+}
+
+export function resolveApplicationPaths(baseDirectory = resolveApplicationRoot()) {
+  const root = resolve(baseDirectory);
   return Object.freeze({
-    temporaryDirectory: resolve(baseDirectory, RUNTIME_RELATIVE_PATHS.temporaryDirectory),
-    technicalState: resolve(baseDirectory, RUNTIME_RELATIVE_PATHS.technicalState),
-    recoveryDirectory: resolve(baseDirectory, RUNTIME_RELATIVE_PATHS.recoveryDirectory),
-    lastExecutionJournal: resolve(baseDirectory, RUNTIME_RELATIVE_PATHS.lastExecutionJournal),
-    manualRestoreJournal: resolve(baseDirectory, RUNTIME_RELATIVE_PATHS.manualRestoreJournal),
+    root,
+    configuration: join(root, 'Configuracao', 'configuracao.ini'),
+    example: join(root, 'Configuracao', 'configuracao.ini.example'),
+    backupRoot: join(root, '_source_versions'),
+  });
+}
+
+export function resolveRuntimePaths(baseDirectory = resolveApplicationRoot()) {
+  const root = resolve(baseDirectory);
+  return Object.freeze({
+    temporaryDirectory: resolve(root, RUNTIME_RELATIVE_PATHS.temporaryDirectory),
+    technicalState: resolve(root, RUNTIME_RELATIVE_PATHS.technicalState),
+    recoveryDirectory: resolve(root, RUNTIME_RELATIVE_PATHS.recoveryDirectory),
+    lastExecutionJournal: resolve(root, RUNTIME_RELATIVE_PATHS.lastExecutionJournal),
+    manualRestoreJournal: resolve(root, RUNTIME_RELATIVE_PATHS.manualRestoreJournal),
   });
 }

@@ -2,6 +2,7 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $projectRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
 $packageJson = Join-Path $projectRoot 'package.json'
 

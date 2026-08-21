@@ -45,7 +45,7 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | Arquivo | Responsabilidade | Dependências relevantes |
 | --- | --- | --- |
 | `src/runtime/version.js` | Leitura compartilhada da identidade e versão autoritativa do `package.json` | Node.js `fs/promises` |
-| `src/runtime/paths.js` | Caminhos técnicos normativos relativos ao runtime | Node.js `path` |
+| `src/runtime/paths.js` | Raiz de instalação e caminhos técnicos normativos relativos ao runtime | Node.js `path`, `url` |
 | `src/runtime/policy.js` | Leitura e validação da política Node.js homologada | `resources/runtime-policy.json` |
 | `src/runtime/dependencies.js` | Validação de package/lock e dependências locais | Node.js `fs/promises` |
 | `src/runtime/environment.js` | Descoberta/validação de Node/npm e instalação autorizada via winget | Node.js `child_process`, módulos runtime |

@@ -1,26 +1,17 @@
 import { access, copyFile, mkdir, readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { constants } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { deriveEffectiveConfiguration, loadConfiguration } from '../configuration/index.js';
 import { createDefaultMinifierRegistry } from '../minifiers/index.js';
 import { createExecutionPlan, executePlan } from '../execution/index.js';
 import { listArtifacts, readArtifact, writeOperationalReports, writeTechnicalLog } from '../observability/index.mjs';
 import { createBackupRestorePlan, createLastMinRestorePlan, executeRestorePlan, listKnownBackups } from '../restore/index.js';
-import { resolveRuntimePaths } from '../runtime/paths.js';
+import { resolveApplicationPaths, resolveApplicationRoot, resolveRuntimePaths } from '../runtime/paths.js';
 import { loadApplicationMetadata } from '../runtime/version.js';
 
-const configurationDirectory = 'Configuracao';
-const configurationName = 'configuracao.ini';
-
 function paths(projectRoot) {
-  const root = resolve(projectRoot);
-  return {
-    root,
-    configuration: join(root, configurationDirectory, configurationName),
-    example: join(root, configurationDirectory, 'configuracao.ini.example'),
-    backupRoot: join(root, '_source_versions'),
-  };
+  return resolveApplicationPaths(projectRoot);
 }
 
 async function exists(filePath) {
@@ -38,7 +29,7 @@ function diagnostic(error) {
 async function loadPersistent(projectRoot) {
   const filePaths = paths(projectRoot);
   if (!await exists(filePaths.configuration)) {
-    return { ok: false, code: 'CONFIGURATION_MISSING', configurationPath: filePaths.configuration, examplePath: filePaths.example };
+    return { ok: false, code: 'CONFIGURATION_MISSING', configurationPath: filePaths.configuration, examplePath: filePaths.example, projectRoot: filePaths.root };
   }
   try {
     const registry = createDefaultMinifierRegistry();
@@ -47,9 +38,10 @@ async function loadPersistent(projectRoot) {
       configuration: await loadConfiguration(filePaths.configuration, { allowedEngines: new Set(registry.list().map((item) => item.id)) }),
       configurationPath: filePaths.configuration,
       examplePath: filePaths.example,
+      projectRoot: filePaths.root,
     };
   } catch (error) {
-    return { ok: false, configurationPath: filePaths.configuration, diagnostic: diagnostic(error) };
+    return { ok: false, configurationPath: filePaths.configuration, examplePath: filePaths.example, projectRoot: filePaths.root, diagnostic: diagnostic(error) };
   }
 }
 
@@ -108,7 +100,7 @@ async function createPlan(request, persistent, applicationVersion) {
   return { plan, minifier: registry.get(effective.engineId), effective };
 }
 
-export async function runBridgeRequest(request, { projectRoot = process.cwd() } = {}) {
+export async function runBridgeRequest(request, { projectRoot = resolveApplicationRoot() } = {}) {
   const application = await loadApplicationMetadata(projectRoot);
   if (request.command === 'version') return { ok: true, ...application };
   const persistent = await loadPersistent(projectRoot);
@@ -158,7 +150,7 @@ export async function runBridgeRequest(request, { projectRoot = process.cwd() } 
     if (request.confirmed !== true) return { ok: false, code: 'CONFIRMATION_REQUIRED', message: 'A criação exige confirmação explícita.' };
     if (await exists(filePaths.configuration)) return { ok: false, code: 'CONFIGURATION_EXISTS', configurationPath: filePaths.configuration };
     try {
-      await mkdir(join(filePaths.root, configurationDirectory), { recursive: true });
+      await mkdir(resolve(filePaths.configuration, '..'), { recursive: true });
       await copyFile(filePaths.example, filePaths.configuration);
       return { ok: true, configurationPath: filePaths.configuration, created: true };
     } catch (error) {
@@ -209,7 +201,7 @@ if (process.argv[2] === '--bridge') {
     process.exitCode = 2;
   }
   if (process.exitCode !== 2) {
-    const result = await runBridgeRequest(request, { projectRoot: process.cwd() });
+    const result = await runBridgeRequest(request);
     console.log(JSON.stringify(result));
     if (!result.ok) process.exitCode = 1;
   }

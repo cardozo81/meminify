@@ -62,7 +62,7 @@ function Invoke-Analyze {
     $request = @{ command = 'analyze'; adjustments = $Adjustments; riskAssessment = @{ authorized = $false; status = 'unavailable'; reason = 'EXECUTION_RISK_ALGORITHM_PENDING' } }
     $response = Invoke-MeminifyBridge $request
     if (-not $response.ok) {
-        $message = if ($response.diagnostic) { $response.diagnostic.message } else { $response.message }
+        $message = if ($response.diagnostic -and $response.diagnostic.message) { $response.diagnostic.message } elseif ($response.message) { $response.message } elseif ($response.code -eq 'CONFIGURATION_MISSING') { "Configuração persistente ausente: $($response.configurationPath). Crie-a explicitamente pelo menu Configurações." } elseif ($response.code) { "A análise foi bloqueada ($($response.code))." } else { 'A análise foi bloqueada por uma resposta sem diagnóstico.' }
         Show-Mensagem "Erro: $message" Red
         return $null
     }
@@ -133,9 +133,6 @@ function Show-RestoreMenu {
 }
 
 function Start-MeminifyUi {
-    $identity = Invoke-MeminifyBridge @{ command = 'version' }
-    if (-not $identity.ok) { Show-Mensagem 'Não foi possível obter a versão do Meminify.' Red; return }
-    Write-Host "`nMEMINIFY v$($identity.version)" -ForegroundColor Cyan
     $identity = Invoke-MeminifyBridge @{ command = 'version' }
     if (-not $identity.ok) { Show-Mensagem 'Não foi possível obter a versão do Meminify.' Red; return }
     Write-Host "`nMEMINIFY v$($identity.version)" -ForegroundColor Cyan
