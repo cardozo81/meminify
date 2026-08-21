@@ -207,6 +207,17 @@ export async function assemblePackage(projectRoot = scriptRoot, options = {}) {
   return metadata;
 }
 
+export async function validatePackagingManifests(projectRoot = scriptRoot) {
+  const metadata = await getPackageMetadata(projectRoot);
+  const lock = await validatePackageLock({ projectRoot });
+  if (!lock.valid) throw new Error(`package.json/package-lock.json inválidos ou divergentes: ${JSON.stringify(lock.diagnostics)}.`);
+  if (lock.packageJson.version !== metadata.version || lock.lockJson.packages?.['']?.version !== metadata.version) throw new Error('Versão divergente entre package.json e package-lock.json.');
+  const policy = await loadRuntimePolicy(join(projectRoot, 'resources', 'runtime-policy.json'));
+  const runtime = validateNodeRuntimeVersion(process.version, policy);
+  if (!runtime.valid) throw new Error(runtime.message);
+  return { valid: true, metadata, runtime, packageJson: lock.packageJson, lockJson: lock.lockJson };
+}
+
 export async function validatePackagingEnvironment(projectRoot = scriptRoot) {
   const metadata = await getPackageMetadata(projectRoot);
   const dependencies = await validateProjectDependencies({ projectRoot });
@@ -222,6 +233,12 @@ async function main() {
   const command = process.argv[2];
   const projectRoot = process.argv[3] ? resolve(process.argv[3]) : scriptRoot;
   if (command === 'info') return getPackageMetadata(projectRoot);
+  if (command === 'validate-manifests') return validatePackagingManifests(projectRoot);
+  if (command === 'validate-dependencies') {
+    const result = await validateProjectDependencies({ projectRoot });
+    if (!result.valid) process.exitCode = 2;
+    return { valid: result.valid, diagnostics: result.diagnostics ?? [] };
+  }
   if (command === 'validate-project') return validatePackagingEnvironment(projectRoot);
   if (command === 'assemble') return assemblePackage(projectRoot);
   if (command === 'validate-package') {

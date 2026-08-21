@@ -2,6 +2,12 @@
 
 ## Não lançado
 
+### 0.1.1
+
+- Preparação explícita e segura das dependências locais ausentes ou divergentes durante `publicar.cmd`, com revalidação e continuação automática.
+- Launcher de empacotamento sem bypass de Execution Policy, com código de saída preservado e mensagem visível no duplo clique.
+- Empacotamento continua usando staging limpo de runtime com `npm ci --omit=dev`, separado do `node_modules` do checkout.
+
 ### Adicionado
 
 - Estrutura documental inicial, convenções do repositório e harness para desenvolvimento assistido por IA.
@@ -13,4 +19,4 @@
 - Política Node.js homologada e bootstrap Windows leve, com instalação winget autorizada e validação reproduzível de npm/dependências.
 - Interface PowerShell, bridge JSON, logs técnicos, relatórios operacionais e restauração manual segura.
 - Manuais do usuário e técnico em Markdown, com build HTML offline local.
-- Versão de desenvolvimento `0.1.0` e empacotamento local allowlisted com ZIP e checksum SHA-256 validados.
+- Versão de desenvolvimento `0.1.1` e empacotamento local allowlisted com ZIP e checksum SHA-256 validados.

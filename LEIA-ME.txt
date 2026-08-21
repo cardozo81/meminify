@@ -1,4 +1,4 @@
-Meminify 0.1.0
+Meminify 0.1.1
 
 O Meminify minifica arquivos JavaScript e CSS no Windows com análise prévia,
 confirmação explícita e mecanismos de backup/restauração.

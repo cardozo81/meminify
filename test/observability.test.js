@@ -56,7 +56,12 @@ test('execução bem-sucedida gera relatório integrado sem alterar dados do pla
     const listed = await runBridgeRequest({ command: 'list-artifacts', kind: 'logs' }, { projectRoot: root });
     assert.equal(listed.ok, true);
     assert.equal(listed.names.length, 2);
-    const viewed = await runBridgeRequest({ command: 'read-artifact', kind: 'reports', name: names.find((name) => name.endsWith('.txt')) }, { projectRoot: root });
+    let reportName;
+    for (const name of names.filter((candidate) => candidate.endsWith('.txt'))) {
+      if ((await readFile(join(root, 'Dados', 'Relatorios', name), 'utf8')).includes('ID da execução: exec-report\n')) { reportName = name; break; }
+    }
+    assert.ok(reportName);
+    const viewed = await runBridgeRequest({ command: 'read-artifact', kind: 'reports', name: reportName }, { projectRoot: root });
     assert.match(viewed.content, /Status: sucesso|Status: completed/);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

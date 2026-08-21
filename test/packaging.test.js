@@ -6,10 +6,11 @@ import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { assemblePackage, assertSafeDistTarget, collectAllowedFiles, getPackageMetadata, validatePackagedTree } from '../scripts/release/package.mjs';
 
 const execFileAsync = promisify(execFile);
-const projectRoot = resolve(new URL('..', import.meta.url).pathname.replace(/^\/(.:)/, '$1'));
+const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
 async function fixture() {
   const root = await mkdtemp(join(tmpdir(), 'Meminify 13C package '));
@@ -37,9 +38,9 @@ function runProcess(file, args, { cwd, input = '', env = {}, shell = false } = {
 
 test('nomes de artefato derivam da versão e allowlist contém somente runtime necessário', async () => {
   const metadata = await getPackageMetadata(projectRoot);
-  assert.equal(metadata.version, '0.1.0');
-  assert.equal(metadata.packageName, 'Meminify-0.1.0');
-  assert.match(metadata.zipPath, /Meminify-0\.1\.0\.zip$/);
+  assert.equal(metadata.version, '0.1.1');
+  assert.equal(metadata.packageName, 'Meminify-0.1.1');
+  assert.match(metadata.zipPath, /Meminify-0\.1\.1\.zip$/);
   const files = await collectAllowedFiles(projectRoot);
   for (const required of ['Executar.cmd', 'Executar.ps1', 'LEIA-ME.txt', 'src/app/ui.ps1', 'resources/runtime-policy.json', 'Configuracao/configuracao.ini.example', 'Documentacao/Gerada/Manual-Usuario/index.html']) assert.ok(files.includes(required));
   assert.equal(files.some((file) => /^(?:test|Especificacoes|_ias|node_modules|Dados)\//.test(file)), false);
@@ -89,7 +90,7 @@ test('pacote isolado resolve versão e inicia fora do repositório em caminho co
     const cmdPath = join(metadata.packageRoot, 'Executar.cmd');
     const cmdStartup = await runProcess(`"${cmdPath}"`, [], { cwd, input: '0\r\n', env: { PSExecutionPolicyPreference: 'RemoteSigned' }, shell: true });
     assert.equal(cmdStartup.code, 0, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
-    assert.equal((cmdStartup.stdout.match(/MEMINIFY v0\.1\.0/g) ?? []).length, 1, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
+    assert.equal((cmdStartup.stdout.match(/MEMINIFY v0\.1\.1/g) ?? []).length, 1, `${cmdStartup.stdout}\n${cmdStartup.stderr}`);
     assert.doesNotMatch(cmdStartup.stdout, /tlocal|não é reconhecido como um comando/i);
     const npmInvocations = (await readFile(npmLogPath, 'utf8')).split(/\r?\n/).filter(Boolean);
     assert.deepEqual(npmInvocations, ['--version']);
@@ -100,11 +101,11 @@ test('pacote isolado resolve versão e inicia fora do repositório em caminho co
     assert.doesNotMatch(restricted.stdout, /tlocal|não é reconhecido como um comando/i);
     const request = await runProcess(process.execPath, [join(metadata.packageRoot, 'src', 'app', 'bridge.mjs'), '--bridge'], { cwd, input: '{"command":"version"}' });
     assert.equal(request.code, 0);
-    assert.equal(JSON.parse(request.stdout).version, '0.1.0');
+    assert.equal(JSON.parse(request.stdout).version, '0.1.1');
     const powershell = 'C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
     const startup = await runProcess(powershell, ['-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File', join(metadata.packageRoot, 'Executar.ps1')], { cwd, input: '1\r\n0\r\n' });
     assert.equal(startup.code, 0);
-    assert.equal((startup.stdout.match(/MEMINIFY v0\.1\.0/g) ?? []).length, 1);
+    assert.equal((startup.stdout.match(/MEMINIFY v0\.1\.1/g) ?? []).length, 1);
     assert.match(startup.stdout, /Erro: Configuração persistente ausente/);
     const powershellMojibake = String.fromCharCode(0x00C3, 0x0192, 0x00C2, 0x00A0);
     assert.doesNotMatch(`${startup.stdout}${startup.stderr}`, new RegExp(powershellMojibake));
@@ -168,6 +169,15 @@ test('ZIP contém raiz esperada e checksum SHA-256 corresponde', async () => {
 });
 
 test('limpeza fora de dist ou com nome inesperado é rejeitada', async () => {
-  assert.throws(() => assertSafeDistTarget(projectRoot, join(projectRoot, 'src'), 'Meminify-0.1.0'));
-  assert.throws(() => assertSafeDistTarget(projectRoot, join(projectRoot, 'dist', 'outro'), 'Meminify-0.1.0'));
+  assert.throws(() => assertSafeDistTarget(projectRoot, join(projectRoot, 'src'), 'Meminify-0.1.1'));
+  assert.throws(() => assertSafeDistTarget(projectRoot, join(projectRoot, 'dist', 'outro'), 'Meminify-0.1.1'));
+});
+
+test('publicar.cmd prepara dependências somente com confirmação e mantém o launcher visível', async () => {
+  const launcher = await readFile(join(projectRoot, 'publicar.cmd'), 'utf8');
+  assert.doesNotMatch(launcher, /ExecutionPolicy\s+Bypass/i);
+  assert.match(launcher, /powershell\.exe\s+-NoProfile\s+-File/i);
+  assert.match(launcher, /pause/i);
+  assert.match(await readFile(join(projectRoot, 'scripts', 'release', 'publicar.ps1'), 'utf8'), /npm ci/);
+  assert.match(await readFile(join(projectRoot, 'scripts', 'release', 'publicar.ps1'), 'utf8'), /\(s\/N\)/);
 });

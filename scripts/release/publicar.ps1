@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 $ErrorActionPreference = 'Stop'
@@ -13,11 +13,29 @@ function Invoke-Checked {
 }
 
 try {
-    $node = (Get-Command node.exe -ErrorAction Stop).Source
-    $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
+    try { $node = (Get-Command node.exe -ErrorAction Stop).Source } catch { throw 'Node.js não foi encontrado. Instale uma linha LTS homologada e tente novamente.' }
+    try { $npm = (Get-Command npm.cmd -ErrorAction Stop).Source } catch { throw 'npm.cmd não foi encontrado. Instale Node.js com npm e tente novamente.' }
+    & $npm --version | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'npm.cmd está indisponível ou não pôde ser validado.' }
     Push-Location $projectRoot
     try {
-        Invoke-Checked 'ambiente, versão, package/lock e dependências' { & $node $packageTool validate-project $projectRoot | Out-Null }
+        Invoke-Checked 'Node.js homologado e package/lock' { & $node $packageTool validate-manifests $projectRoot | Out-Null }
+        $dependencyOutput = & $node $packageTool validate-dependencies $projectRoot 2>&1
+        $dependencyExit = $LASTEXITCODE
+        if ($dependencyExit -ne 0) {
+            Write-Host 'Dependências locais necessárias para gerar a distribuição não estão instaladas ou estão divergentes.' -ForegroundColor Yellow
+            Write-Host (($dependencyOutput | Out-String).Trim()) -ForegroundColor Yellow
+            if (Test-Path -LiteralPath (Join-Path $projectRoot 'node_modules')) { Write-Host 'O npm ci recriará a árvore local de dependências existente.' -ForegroundColor Yellow }
+            $answer = Read-Host 'Deseja preparar o ambiente executando "npm ci"? (s/N)'
+            if ($answer -notmatch '^[sS]$') { throw 'Preparação das dependências recusada; empacotamento cancelado sem gerar pacote.' }
+            $manifestHashes = @{}
+            foreach ($manifest in @('package.json', 'package-lock.json')) { $manifestHashes[$manifest] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $projectRoot $manifest)).Hash }
+            Write-Host '[PREPARAR] npm ci no checkout de desenvolvimento' -ForegroundColor Cyan
+            & $npm ci --no-audit --no-fund
+            if ($LASTEXITCODE -ne 0) { throw "npm ci falhou com código $LASTEXITCODE." }
+            foreach ($manifest in $manifestHashes.Keys) { if ((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $projectRoot $manifest)).Hash -ne $manifestHashes[$manifest]) { throw "npm ci alterou $manifest; empacotamento bloqueado." } }
+            Invoke-Checked 'revalidação das dependências locais' { & $node $packageTool validate-dependencies $projectRoot | Out-Null }
+        }
         Invoke-Checked 'UTF-8 e mojibake' { & $node (Join-Path $projectRoot 'scripts\quality\check-encoding.mjs') }
         Invoke-Checked 'testes do pacote' { & $npm test }
         Invoke-Checked 'documentação HTML offline' { & $npm run build:docs }
