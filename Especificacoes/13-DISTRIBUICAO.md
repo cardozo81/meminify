@@ -34,11 +34,11 @@ A montagem usa allowlist e preserva os caminhos relativos do runtime:
 
 ```text
 Meminify-<version>\
+  Executar.cmd
   Executar.ps1
   package.json
   package-lock.json
-  README.md
-  CHANGELOG.md
+  LEIA-ME.txt
   Configuracao\configuracao.ini.example
   src\
   resources\
@@ -47,6 +47,8 @@ Meminify-<version>\
 ```
 
 `src\` contém somente módulos JavaScript, MJS e PowerShell; `resources\` contém somente JSON requerido pelo runtime. `node_modules` não é distribuído: o bootstrap usa os manifestos bloqueados para instalação local reproduzível quando necessária. O ZIP contém exatamente uma raiz `Meminify-<version>/`.
+
+`Executar.cmd` é a entrada recomendada para uso normal por duplo clique e delega para `Executar.ps1` relativo ao próprio pacote, sem alterar a política de execução. `LEIA-ME.txt` é a orientação prática destinada ao usuário; o README de desenvolvimento não integra o pacote.
 
 O checksum usa SHA-256 em texto convencional: hash hexadecimal minúsculo, dois espaços e o nome do ZIP.
 

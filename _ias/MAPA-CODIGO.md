@@ -42,10 +42,9 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 
 ## Runtime e integridade
 
-| `src/runtime/version.js` | Leitura compartilhada da identidade e versão autoritativa do package.json | Node.js fs/promises |
-
 | Arquivo | Responsabilidade | Dependências relevantes |
 | --- | --- | --- |
+| `src/runtime/version.js` | Leitura compartilhada da identidade e versão autoritativa do `package.json` | Node.js `fs/promises` |
 | `src/runtime/paths.js` | Caminhos técnicos normativos relativos ao runtime | Node.js `path` |
 | `src/runtime/policy.js` | Leitura e validação da política Node.js homologada | `resources/runtime-policy.json` |
 | `src/runtime/dependencies.js` | Validação de package/lock e dependências locais | Node.js `fs/promises` |
@@ -76,6 +75,7 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | Arquivo | Responsabilidade | Dependências relevantes |
 | --- | --- | --- |
 | `Executar.ps1` | Estabelece a raiz, oferece instalação autorizada quando Node falta e inicia o bootstrap Node | Windows PowerShell, `winget.exe` opcional |
+| `Executar.cmd` | Lançador de duplo clique que delega de forma relativa para o PowerShell | Windows CMD, `Executar.ps1` |
 | `src/bootstrap/cli.mjs` | Entrada leve do bootstrap, mensagens pt-BR e handoff somente se existir menu futuro | Módulos runtime |
 | `resources/runtime-policy.json` | Política versionada de linhas e instalação Node homologadas | Especificação 07 |
 
@@ -120,14 +120,14 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `publicar.cmd` | Launcher fino do empacotamento local | Windows CMD, `scripts/release/publicar.ps1` |
 | `scripts/release/publicar.ps1` | Orquestra gates, montagem, ZIP e checksum SHA-256 | Node.js, npm.cmd, Compress-Archive |
 | `scripts/release/package.mjs` | Autoridade testável de versão, allowlist, montagem e validação do pacote | Runtime, Node.js built-ins |
+| `LEIA-ME.txt` | Orientação prática distribuída ao usuário final | Pacote local, Manual do Usuário |
 | `test/packaging.test.js` | Testes de nomes versionados, allowlist, proibições, ZIP, checksum e limpeza segura | Módulo de empacotamento, PowerShell |
 
 ## Qualidade e testes
 
-| `test/version.test.js` | Testes de versão autoritativa e exposição na ponte/UI | node:test, runtime e bridge |
-
 | Arquivo | Responsabilidade | Dependências relevantes |
 | --- | --- | --- |
+| `test/version.test.js` | Testes de versão autoritativa e exposição na ponte/UI | `node:test`, runtime e bridge |
 | `scripts/quality/check-encoding.mjs` | Validação estrita de UTF-8 e sequências conhecidas de mojibake, ignorando dependências e saídas | Node.js built-ins |
 | `test/configuration.test.js` | Testes focados de domínio, INI, validação e configuração efetiva | `node:test`, módulos de configuração |
 | `test/encoding.test.js` | Testes focados de texto UTF-8 e detecção de mojibake | `node:test`, script de encoding |

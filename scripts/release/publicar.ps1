@@ -44,7 +44,7 @@ try {
             if ($entries.Count -eq 0 -or @($entries | Where-Object { -not $_.StartsWith($prefix, [System.StringComparison]::Ordinal) }).Count -gt 0) {
                 throw 'O ZIP não contém exclusivamente a raiz versionada esperada.'
             }
-            foreach ($required in @('Executar.ps1', 'package.json', 'package-lock.json', 'Configuracao/configuracao.ini.example', 'Documentacao/Gerada/Manual-Usuario/index.html', 'Documentacao/Gerada/Manual-Tecnico/index.html')) {
+            foreach ($required in @('Executar.cmd', 'Executar.ps1', 'LEIA-ME.txt', 'package.json', 'package-lock.json', 'Configuracao/configuracao.ini.example', 'Documentacao/Gerada/Manual-Usuario/index.html', 'Documentacao/Gerada/Manual-Tecnico/index.html')) {
                 if ($entries -notcontains "$prefix$required") { throw "Arquivo obrigatório ausente no ZIP: $required." }
             }
         } finally { $archive.Dispose() }

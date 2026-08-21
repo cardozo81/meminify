@@ -4,14 +4,15 @@ import { fileURLToPath } from 'node:url';
 import { validatePackageLock, validateProjectDependencies } from '../../src/runtime/dependencies.js';
 import { loadRuntimePolicy, validateNodeRuntimeVersion } from '../../src/runtime/policy.js';
 import { loadApplicationMetadata } from '../../src/runtime/version.js';
+import { validateFile } from '../quality/check-encoding.mjs';
 
 const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FIXED_FILES = Object.freeze([
+  'Executar.cmd',
   'Executar.ps1',
   'package.json',
   'package-lock.json',
-  'README.md',
-  'CHANGELOG.md',
+  'LEIA-ME.txt',
   'Configuracao/configuracao.ini.example',
   'Documentacao/Gerada/Manual-Usuario/index.html',
   'Documentacao/Gerada/Manual-Tecnico/index.html',
@@ -21,6 +22,9 @@ const ALLOWED_TREES = Object.freeze([
   { path: 'resources', extensions: new Set(['.json']) },
 ]);
 const FORBIDDEN_PARTS = new Set(['.git', '.github', '_ias', 'Especificacoes', 'test', 'tests', 'fixtures', 'node_modules', 'dist', 'Dados', '_source_versions']);
+const TEXT_EXTENSIONS = new Set(['.cmd', '.css', '.html', '.ini', '.js', '.json', '.lock', '.mjs', '.ps1', '.txt']);
+const REPRESENTATIVE_TERMS = Object.freeze(['configuração', 'minificação', 'execução', 'usuário', 'não', 'restauração', 'relatório']);
+const LOCAL_CONTENT = /(?:[A-Za-z]:\\(?:Users|IA-PROJETOS)\\|OneDrive\\|(?:ghp_|github_pat_|sk-)[A-Za-z0-9_-]+|(?:password|token|secret)\s*=)/i;
 
 function slash(value) { return value.split(sep).join('/'); }
 function extension(name) { const index = name.lastIndexOf('.'); return index < 0 ? '' : name.slice(index).toLowerCase(); }
@@ -76,6 +80,22 @@ function forbidden(relativePath) {
     || /(?:^|\/).+\.(?:log|tmp)$/i.test(relativePath);
 }
 
+async function validatePackagedText(packageRoot, files) {
+  const texts = [];
+  for (const file of files) {
+    if (!TEXT_EXTENSIONS.has(extension(file))) continue;
+    const path = join(packageRoot, ...file.split('/'));
+    await validateFile(path);
+    const text = await readFile(path, 'utf8');
+    if (LOCAL_CONTENT.test(text)) throw new Error(`Conteúdo local ou credencial proibida no pacote: ${file}.`);
+    texts.push(text);
+  }
+  const combined = texts.join('\n');
+  for (const term of REPRESENTATIVE_TERMS) {
+    if (!combined.includes(term)) throw new Error(`Termo pt-BR obrigatório ausente no pacote: ${term}.`);
+  }
+}
+
 export async function validatePackagedTree({ projectRoot = scriptRoot, packageRoot, version } = {}) {
   const metadata = await getPackageMetadata(projectRoot);
   if (version !== metadata.version || resolve(packageRoot) !== metadata.packageRoot) throw new Error('A versão ou raiz do pacote não corresponde ao package.json.');
@@ -86,6 +106,7 @@ export async function validatePackagedTree({ projectRoot = scriptRoot, packageRo
     if (forbidden(file)) throw new Error(`Conteúdo proibido no pacote: ${file}.`);
     if (!expected.includes(file)) throw new Error(`Conteúdo fora da allowlist no pacote: ${file}.`);
   }
+  await validatePackagedText(packageRoot, actual);
   const packagedLock = await validatePackageLock({ projectRoot: packageRoot });
   if (!packagedLock.valid) throw new Error(`Package/lock inválido no pacote: ${JSON.stringify(packagedLock.diagnostics)}.`);
   if (packagedLock.packageJson.version !== version || packagedLock.lockJson.packages?.['']?.version !== version) throw new Error('Versão divergente entre pacote, package.json e package-lock.json.');

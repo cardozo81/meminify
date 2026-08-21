@@ -12,13 +12,17 @@ Não existe risco zero. O risco do perfil é exibido separadamente; o algoritmo 
 - Node.js LTS homologado: linhas 24 ou 22; a linha 24 é preferida.
 - Dependências locais do projeto.
 
-Execute `Executar.ps1` na raiz. O bootstrap valida Node, npm, `package.json`, `package-lock.json` e dependências. Se Node estiver ausente ou não homologado, pode oferecer a instalação exata autorizada via winget. Recusar a instalação não altera o sistema.
+Para o uso normal, execute `Executar.cmd` com duplo clique na raiz. Ele apenas inicia `Executar.ps1` relativo ao pacote, sem alterar a política de execução do PowerShell. `Executar.ps1` é a alternativa técnica/direta. O bootstrap valida Node, npm, `package.json`, `package-lock.json` e dependências. Se Node estiver ausente ou não homologado, pode oferecer a instalação exata autorizada via winget. Recusar a instalação não altera o sistema.
 
 Após o bootstrap, o menu oferece análise, minificação, ajuste temporário, configurações, backups/restauração, relatórios e logs técnicos.
 
 ## Configuração
 
 A configuração persistente é `Configuracao\configuracao.ini`; o modelo versionado é `Configuracao\configuracao.ini.example`. Se o arquivo real não existir, o menu informa o caminho e só o cria a partir do modelo após confirmação. Ele nunca sobrescreve uma configuração existente.
+
+O modelo `.example` é distribuído sem preferências pessoais. O INI real é do usuário: não acompanha o pacote, não é versionado e só pode ser criado ou atualizado por uma ação persistente confirmada. A interface é o meio recomendado; edição manual é uma opção avançada. Valores manuais inválidos bloqueiam a operação, sem correção ou fallback silencioso.
+
+Apagar `configuracao.ini` remove apenas as preferências persistentes; não remove backups, estado, relatórios ou logs. Em uma abertura posterior, a ausência é detectada e a criação pode ser oferecida explicitamente. Atualizações do aplicativo nunca sobrescrevem um INI existente; qualquer migração futura deve ser explícita.
 
 O arquivo INI usa listas numeradas, por exemplo:
 
@@ -61,7 +65,9 @@ Se um destino `.min` já existir, todos os conflitos são listados e uma autoriz
 
 ## Ajustes temporários
 
-O menu atual permite ajustar o modo de saída somente para a execução atual. O ajuste fica em memória e não modifica o INI. Fechar o programa descarta o ajuste.
+**Configurações persistentes** são gravadas em `configuracao.ini` somente por uma ação persistente com confirmação explícita. Elas podem conter origens/diretórios, arquivos explícitos, recursão, regras de inclusão/exclusão, perfil de minificação, modo de saída e motor homologado.
+
+**Ajustar somente esta execução** permite alterar o modo de saída apenas para a execução atual. O ajuste fica em memória, nunca modifica o INI e é descartado ao fechar o programa.
 
 ## Backups e restauração manual
 

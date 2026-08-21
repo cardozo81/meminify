@@ -28,10 +28,12 @@ a { color: #005a9c; }
 <li>Node.js LTS homologado: linhas 24 ou 22; a linha 24 é preferida.</li>
 <li>Dependências locais do projeto.</li>
 </ul>
-<p>Execute <code>Executar.ps1</code> na raiz. O bootstrap valida Node, npm, <code>package.json</code>, <code>package-lock.json</code> e dependências. Se Node estiver ausente ou não homologado, pode oferecer a instalação exata autorizada via winget. Recusar a instalação não altera o sistema.</p>
+<p>Para o uso normal, execute <code>Executar.cmd</code> com duplo clique na raiz. Ele apenas inicia <code>Executar.ps1</code> relativo ao pacote, sem alterar a política de execução do PowerShell. <code>Executar.ps1</code> é a alternativa técnica/direta. O bootstrap valida Node, npm, <code>package.json</code>, <code>package-lock.json</code> e dependências. Se Node estiver ausente ou não homologado, pode oferecer a instalação exata autorizada via winget. Recusar a instalação não altera o sistema.</p>
 <p>Após o bootstrap, o menu oferece análise, minificação, ajuste temporário, configurações, backups/restauração, relatórios e logs técnicos.</p>
 <h2>Configuração</h2>
 <p>A configuração persistente é <code>Configuracao\configuracao.ini</code>; o modelo versionado é <code>Configuracao\configuracao.ini.example</code>. Se o arquivo real não existir, o menu informa o caminho e só o cria a partir do modelo após confirmação. Ele nunca sobrescreve uma configuração existente.</p>
+<p>O modelo <code>.example</code> é distribuído sem preferências pessoais. O INI real é do usuário: não acompanha o pacote, não é versionado e só pode ser criado ou atualizado por uma ação persistente confirmada. A interface é o meio recomendado; edição manual é uma opção avançada. Valores manuais inválidos bloqueiam a operação, sem correção ou fallback silencioso.</p>
+<p>Apagar <code>configuracao.ini</code> remove apenas as preferências persistentes; não remove backups, estado, relatórios ou logs. Em uma abertura posterior, a ausência é detectada e a criação pode ser oferecida explicitamente. Atualizações do aplicativo nunca sobrescrevem um INI existente; qualquer migração futura deve ser explícita.</p>
 <p>O arquivo INI usa listas numeradas, por exemplo:</p>
 <pre><code>[Configuracao]
 Motor=esbuild
@@ -58,7 +60,8 @@ Incluir01=*.js</code></pre>
 <p>**Minificar** sempre refaz a pré-análise. Antes de qualquer escrita, o menu mostra o escopo e solicita confirmação. Como não há algoritmo final de risco de execução, a interface deixa essa ausência clara e pede autorização explícita adicional; ela não declara risco zero.</p>
 <p>Se um destino <code>.min</code> já existir, todos os conflitos são listados e uma autorização global específica é exigida. Recusar cancela a execução inteira sem gerar saídas parciais.</p>
 <h2>Ajustes temporários</h2>
-<p>O menu atual permite ajustar o modo de saída somente para a execução atual. O ajuste fica em memória e não modifica o INI. Fechar o programa descarta o ajuste.</p>
+<p>**Configurações persistentes** são gravadas em <code>configuracao.ini</code> somente por uma ação persistente com confirmação explícita. Elas podem conter origens/diretórios, arquivos explícitos, recursão, regras de inclusão/exclusão, perfil de minificação, modo de saída e motor homologado.</p>
+<p>**Ajustar somente esta execução** permite alterar o modo de saída apenas para a execução atual. O ajuste fica em memória, nunca modifica o INI e é descartado ao fechar o programa.</p>
 <h2>Backups e restauração manual</h2>
 <p>No modo de sobrescrita, a restauração lista backups válidos em <code>_source_versions</code> e também aceita uma pasta exata informada manualmente. O manifesto, a cópia de backup, os hashes, os caminhos e o estado técnico são validados antes de formar um plano.</p>
 <p>Se o arquivo atual ainda corresponde ao hash minificado registrado, basta a confirmação normal. Se foi alterado ou está ausente, há uma confirmação adicional; recusá-la preserva esse item. O arquivo minificado atual não recebe backup durante a restauração.</p>

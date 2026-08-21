@@ -1,0 +1,41 @@
+Meminify 0.1.0
+
+O Meminify minifica arquivos JavaScript e CSS no Windows com análise prévia,
+confirmação explícita e mecanismos de backup/restauração.
+
+Como iniciar
+- Para uso normal, clique duas vezes em Executar.cmd.
+- Executar.ps1 é a alternativa técnica/direta.
+- Na primeira execução, o programa valida o Node.js e as dependências. Se o
+  Node.js estiver ausente, a instalação homologada pode ser oferecida com sua
+  autorização explícita.
+
+Uso seguro
+- Analise os arquivos antes de minificar. Nenhum arquivo é alterado sem a sua
+  confirmação explícita.
+- BackupESobrescreverOriginais valida um backup antes de substituir o original.
+- PreservarOriginaisECriarMinificados mantem o original e cria .min.js ou
+  .min.css ao lado dele.
+- Backups e restauração ficam disponíveis no menu. Relatórios ficam em
+  Dados\Relatorios e logs técnicos em Dados\Logs.
+
+Configuracao
+- Configuracao\configuracao.ini.example é apenas o modelo distribuído, sem
+  preferências pessoais.
+- Configuracao\configuracao.ini é sua configuração persistente. Ela não vem no
+  pacote, não deve ser enviada ao Git e só é criada mediante confirmação.
+- Configurações persistentes só são salvas por ações persistentes confirmadas.
+  Ajustar somente esta execução vale apenas em memória e nunca altera o INI.
+- O INI pode definir diretórios/origens, arquivos explícitos, recursão,
+  regras de inclusão/exclusão, perfil, modo de saída e motor homologado.
+- A interface é o modo recomendado. Edição manual é avançada: valor inválido
+  bloqueia a operação; o Meminify não corrige nem escolhe alternativas.
+- Apagar configuracao.ini remove apenas preferências persistentes, não apaga
+  backups, estado, relatórios ou logs. Na próxima abertura a criação pode ser
+  oferecida explicitamente. Atualizações nunca sobrescrevem seu INI; qualquer
+  migração futura deverá ser explícita.
+
+Ajuda
+O manual offline do usuário está em Documentacao\Gerada\Manual-Usuario\index.html.
+Se houver configuração inválida, origem inacessível ou recovery-required, não
+force a operação: consulte o menu, os relatórios e os logs técnicos.
