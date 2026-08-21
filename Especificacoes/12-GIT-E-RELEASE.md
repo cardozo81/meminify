@@ -2,7 +2,7 @@
 
 ## Fluxo atual aprovado
 
-- O desenvolvimento é conduzido por uma única pessoa com assistência de IA.
+- O desenvolvimento é conduzido por uma única pessoa, em uma máquina, com assistência de IA e sem desenvolvimento concorrente.
 - `main` é a branch ativa de desenvolvimento.
 - Não se cria uma branch por prompt, funcionalidade, correção ou alteração documental.
 - Branches não são criadas automaticamente.
@@ -14,6 +14,8 @@
 - Mensagens de commit e comentários destinados a pessoas devem ser escritos em pt-BR, UTF-8, com acentos e `ç` corretos.
 - Force-push nunca deve ser usado, salvo pedido explícito em uma tarefa futura.
 - A estrutura do repositório deve crescer incrementalmente, sem placeholders vazios para arquitetura futura.
+
+Verificações Git devem ser feitas quando forem relevantes a commit/push, release, operação destrutiva ou estado inesperado. Não se deve repetir sincronização remota sem motivo concreto.
 
 Testes e validações aplicáveis ao checkpoint seguem `11-TESTES-E-QUALIDADE.md`.
 

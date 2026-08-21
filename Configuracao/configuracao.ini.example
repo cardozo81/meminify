@@ -1,0 +1,27 @@
+; Modelo de configuração persistente do Meminify.
+; O arquivo real do usuário não deve ser versionado.
+
+[Configuracao]
+Motor=esbuild
+Perfil=Padrao
+ModoSaida=BackupESobrescreverOriginais
+Incluir01=**/*.js
+Incluir02=**/*.css
+Excluir01=node_modules
+Excluir02=.git
+
+[Origem.001]
+Tipo=Diretorio
+Caminho=C:\Projetos\exemplo
+ExecutarPorPadrao=true
+Recursivo=true
+Modo=Todos
+Incluir01=*.js
+Incluir02=*.css
+Excluir01=_source_versions
+
+[Origem.002]
+Tipo=Arquivo
+Caminho=C:\Projetos\exemplo\entrada.js
+ExecutarPorPadrao=false
+Modo=Arquivo

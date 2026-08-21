@@ -14,21 +14,22 @@
 - O desenvolvimento é incremental, assistido por IA e realizado diretamente em `main`, sem branch por tarefa e sem pull request no fluxo atual.
 - Testes são focados, proporcionais e introduzidos junto com os comportamentos.
 - Commits e pushes representam checkpoints significativos e validados, não microalterações.
+- A dependência `ini` foi introduzida na versão exata `7.0.0` e está bloqueada no lockfile; versões futuras são selecionadas quando cada dependência for introduzida e devem permanecer reproduzíveis.
 
 Os detalhes normativos de cada decisão pertencem aos documentos temáticos indicados por `_ias/INDEX.md`.
 
 ## Pendentes
 
-As seguintes decisões permanecem deliberadamente sem valor inventado:
+As seguintes decisões permanecem deliberadamente sem valor inventado. A área futura indicada orienta a próxima consolidação:
 
-- política de retenção automática de backups;
-- políticas de retenção automática de logs e relatórios;
-- linhas e versões exatas de Node.js LTS homologadas;
-- eventual limiar mínimo de redução para aceitar um resultado;
-- opções detalhadas permitidas no perfil `Personalizado`;
-- versões exatas das dependências;
-- layout final detalhado do pacote de distribuição;
-- mecanismo concreto de persistência resistente a falhas para o rastreamento da execução;
-- método detalhado para calcular o risco estimado de uma execução.
+- política de retenção automática de backups — recuperação e backup;
+- políticas de retenção automática de logs e relatórios — logs e relatórios;
+- linhas e versões exatas de Node.js LTS homologadas — runtime e bootstrap;
+- eventual limiar mínimo de redução para aceitar um resultado — minificação e qualidade;
+- opções detalhadas permitidas no perfil `Personalizado` — perfis e adaptadores;
+- versões exatas de futuras dependências — fase que introduzir cada dependência;
+- layout final detalhado do pacote de distribuição — distribuição;
+- mecanismo concreto de persistência resistente a falhas para o rastreamento da execução — transações e recuperação;
+- método detalhado para calcular o risco estimado de uma execução — UX e análise de risco.
 
 Esses pontos exigem decisão explícita em tarefa futura. Nenhum padrão, fallback ou valor deve ser inferido enquanto permanecerem pendentes.

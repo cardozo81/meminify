@@ -1,0 +1,12 @@
+{
+  "name": "meminify",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check:encoding": "node scripts/quality/check-encoding.mjs"
+  },
+  "dependencies": {
+    "ini": "7.0.0"
+  }
+}

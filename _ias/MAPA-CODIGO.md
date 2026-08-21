@@ -1,11 +1,32 @@
 # Mapa do código
 
-Ainda não existe implementação da aplicação.
+Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 
-Este documento evoluirá junto com o código e registrará, para cada arquivo existente:
+## Fundação Node.js
 
-`arquivo` → `responsabilidade` → `dependências relevantes`
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `package.json` | Metadados, modo ES module, scripts e dependência declarada | `ini@7.0.0` |
+| `package-lock.json` | Lockfile reproduzível das dependências | npm |
+| `Configuracao/configuracao.ini.example` | Exemplo versionado da estrutura de configuração aprovada | Especificação 06 |
 
-## Estrutura planejada
+## Domínio e configuração
 
-Módulos de interface, configuração, descoberta de fontes, minificação, proteção de arquivos e relatórios serão adicionados somente quando uma tarefa aprovar sua implementação. Esta seção descreve uma direção futura; não afirma que esses módulos já existam.
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `src/domain/index.js` | Constantes de perfis, modos, tipos, riscos e default aprovado | Nenhuma |
+| `src/configuration/errors.js` | Erro estruturado de configuração e códigos diagnósticos | Nenhuma |
+| `src/configuration/utf8.js` | Leitura de arquivo com decodificação UTF-8 fatal | Node.js `fs/promises`, `util` |
+| `src/configuration/parse.js` | Pré-detecção de duplicatas, parsing estrutural, listas numeradas e normalização INI | `ini@7.0.0` |
+| `src/configuration/validate.js` | Validação de domínio e conjunto de motores homologados injetado | `src/domain/index.js` |
+| `src/configuration/index.js` | API de carregamento, parsing e configuração efetiva temporária imutável | Módulos de configuração |
+
+## Qualidade e testes
+
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `scripts/quality/check-encoding.mjs` | Validação estrita de UTF-8 e sequências conhecidas de mojibake, ignorando dependências e saídas | Node.js built-ins |
+| `test/configuration.test.js` | Testes focados de domínio, INI, validação e configuração efetiva | `node:test`, módulos de configuração |
+| `test/encoding.test.js` | Testes focados de texto UTF-8 e detecção de mojibake | `node:test`, script de encoding |
+
+Scanner, glob, adaptadores, minificação, backup, estado, interface e distribuição ainda não existem; não são representados como placeholders neste mapa.
