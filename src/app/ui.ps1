@@ -43,6 +43,7 @@ function Show-Analysis {
     Show-Mensagem "Modo: $($Analysis.outputMode) | Perfil: $($Analysis.profile) | Risco do perfil: $($Analysis.profileRisk)"
     Show-Mensagem "Risco estimado da execução: $($Analysis.executionRisk.displayLevel)" Yellow
     Show-Mensagem "Escopo da operação: $($Analysis.scope.fileCount) arquivo(s) elegível(is)." Gray
+    if ($Analysis.backupRoot) { Show-Mensagem "Raiz dos backups: $($Analysis.backupRoot)" Cyan }
     if ($Analysis.executionRisk.conflictElevation) { Show-Mensagem 'Fator de risco: sobrescrita global autorizável de destino .min preexistente.' Yellow }
     foreach ($source in $Analysis.sources) { Show-Mensagem "Origem $($source.id): $($source.path) | Recursivo: $($source.recursive)" Cyan }
     Show-Mensagem "Encontrados: $($Analysis.counts.found) | Elegíveis: $($Analysis.counts.eligible) | Ignorados: $($Analysis.counts.ignored)"
@@ -235,9 +236,10 @@ function Start-MeminifyUi {
                     if ($null -eq $analysis -or $analysis.status -ne 'ready') { Show-Mensagem 'A minificação foi bloqueada pela pré-análise.' Red; break }
                     if (-not (Confirmar-Acao 'Confirmar a minificação do escopo exibido')) { Show-Mensagem 'Execução cancelada.' Yellow; break }
                     $overwrite = $true
-                    if ($analysis.conflicts.Count -gt 0) { $overwrite = Confirmar-Acao 'Autorizar globalmente a sobrescrita de todos os destinos .min listados' }
+                    $authorizeConflicts = $false
+                    if ($analysis.conflicts.Count -gt 0) { $overwrite = Confirmar-Acao 'Autorizar globalmente a sobrescrita de todos os destinos .min listados'; $authorizeConflicts = $overwrite }
                     if (-not $overwrite) { Show-Mensagem 'Execução cancelada; nenhum arquivo foi alterado.' Yellow; break }
-                    $response = Invoke-MeminifyBridge @{ command = 'execute'; adjustments = $script:TemporaryAdjustments; confirmed = $true; authorizeOverwriteConflicts = $true }
+                    $response = Invoke-MeminifyBridge @{ command = 'execute'; adjustments = $script:TemporaryAdjustments; confirmed = $true; authorizeOverwriteConflicts = $authorizeConflicts; confirmationFingerprint = $analysis.confirmationFingerprint }
                     if ($response.ok -and $response.result.status -eq 'completed') { Show-Mensagem 'Minificação concluída.' Green } elseif ($response.ok -and $response.result.status -eq 'cancelled') { Show-Mensagem 'Execução cancelada.' Yellow } else { Show-Mensagem "Falha: $($response.diagnostic.message)" Red }
                 }
                 '3' { Invoke-TemporaryAdjustment }

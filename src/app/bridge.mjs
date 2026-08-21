@@ -1,11 +1,12 @@
 import { access, copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { constants } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { deriveEffectiveConfiguration, loadConfiguration } from '../configuration/index.js';
 import { OUTPUT_MODES } from '../domain/index.js';
 import { createDefaultMinifierRegistry } from '../minifiers/index.js';
-import { createExecutionPlan, executePlan } from '../execution/index.js';
+import { createExecutionPlan, executePlan, ExecutionError } from '../execution/index.js';
 import { listArtifacts, readArtifact, writeOperationalReports, writeTechnicalLog } from '../observability/index.mjs';
 import { createBackupRestorePlan, createLastMinRestorePlan, executeRestorePlan, listKnownBackups } from '../restore/index.js';
 import { resolveApplicationPaths, resolveApplicationRoot, resolveRuntimePaths } from '../runtime/paths.js';
@@ -47,7 +48,7 @@ async function loadPersistent(projectRoot) {
 }
 
 function summarizePlan(plan) {
-  return {
+  const summary = {
     formatVersion: plan.formatVersion,
     executionId: plan.executionId,
     status: plan.status,
@@ -66,6 +67,11 @@ function summarizePlan(plan) {
     requiredConfirmations: plan.requiredConfirmations,
     backupRoot: plan.backupRoot,
     runtimePaths: plan.runtimePaths,
+  };
+  const { executionId: ignoredExecutionId, ...confirmable } = summary;
+  return {
+    ...summary,
+    confirmationFingerprint: createHash('sha256').update(JSON.stringify(confirmable)).digest('hex'),
   };
 }
 
@@ -196,13 +202,17 @@ export async function runBridgeRequest(request, { projectRoot = resolveApplicati
       try {
         const created = await createPlan(request, persistent, application.version);
         plan = created.plan;
+        const confirmedPlan = summarizePlan(plan);
+        if (request.confirmed === true && request.confirmationFingerprint !== confirmedPlan.confirmationFingerprint) {
+          throw new ExecutionError('PLAN_CHANGED_AFTER_ANALYSIS', 'O escopo ou as condições mudaram após a análise. Analise novamente antes de confirmar a execução.');
+        }
         const result = await executePlan(plan, created.minifier, {
           confirmed: request.confirmed === true,
           authorizeOverwriteConflicts: request.authorizeOverwriteConflicts === true,
           meminifyVersion: application.version,
         });
         const artifacts = await persistArtifacts({ projectRoot, plan, result, resultStatus: result.status, startedAt, phases: [{ name: 'execução', status: result.status }], applicationVersion: application.version });
-        return { ok: true, plan: summarizePlan(plan), result, artifacts };
+        return { ok: true, plan: confirmedPlan, result, artifacts };
       } catch (error) {
         const executionStatus = error.code === 'RECOVERY_REQUIRED'
           ? 'recovery-required'

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
@@ -137,6 +137,11 @@ test('pacote isolado resolve versão e inicia fora do repositório em caminho co
     const failure = await runProcess('cmd.exe', ['/d', '/c', 'Executar.cmd'], { cwd: failureRoot, input: '\r\n' });
     assert.equal(failure.code, 1);
     assert.match(failure.stdout, /não foi possível iniciar|encerrado com erro/i);
+    const esbuildBinary = join(metadata.packageRoot, 'node_modules', '@esbuild', 'win32-x64', 'esbuild.exe');
+    await rename(esbuildBinary, `${esbuildBinary}.ausente`);
+    const damagedRuntime = await runProcess(process.execPath, [join(metadata.packageRoot, 'src', 'bootstrap', 'cli.mjs'), '--bootstrap-only'], { cwd });
+    assert.equal(damagedRuntime.code, 1);
+    assert.match(`${damagedRuntime.stdout}${damagedRuntime.stderr}`, /runtime interno do esbuild empacotado.*ausente, corrompido ou incompatível/i);
   } finally {
     await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     await rm(cwd, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });

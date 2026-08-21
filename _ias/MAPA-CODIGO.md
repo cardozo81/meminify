@@ -48,7 +48,7 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `src/runtime/paths.js` | Raiz de instalação e caminhos técnicos normativos relativos ao runtime | Node.js `path`, `url` |
 | `src/runtime/policy.js` | Leitura e validação da política Node.js homologada | `resources/runtime-policy.json` |
 | `src/runtime/dependencies.js` | Validação de package/lock e dependências locais | Node.js `fs/promises` |
-| `src/runtime/environment.js` | Descoberta/validação de Node/npm, instalação autorizada de Node via winget e bloqueio de dependência empacotada inválida | Node.js `child_process`, módulos runtime |
+| `src/runtime/environment.js` | Descoberta/validação de Node/npm, sonda funcional do esbuild empacotado, instalação autorizada de Node via winget e bloqueio de runtime inválido | Node.js `child_process`, módulos runtime |
 | `src/integrity/errors.js` | Erros estruturados de integridade | Nenhuma |
 | `src/integrity/hash.js` | SHA-256 incremental de arquivos | Node.js `crypto`, `fs` |
 | `src/integrity/json-store.js` | Leitura UTF-8 estrita e persistência JSON por arquivo temporário e rename | Node.js built-ins |
@@ -84,7 +84,7 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 
 | Arquivo | Responsabilidade | Dependências relevantes |
 | --- | --- | --- |
-| `src/app/bridge.mjs` | Bridge JSON fino para resumo, pré-análise, execução e criação segura da configuração | Configuração, scanner e execução |
+| `src/app/bridge.mjs` | Bridge JSON para resumo, pré-análise, impressão digital do plano confirmado, execução e criação segura da configuração | Configuração, scanner e execução |
 | `src/app/ui.ps1` | Menu PowerShell, apresentação pt-BR, ajustes temporários e confirmações | `src/app/bridge.mjs` |
 | `Executar.ps1` | Bootstrap validado e abertura do menu interativo | `src/bootstrap/cli.mjs`, `src/app/ui.ps1` |
 
@@ -138,4 +138,4 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/execution.test.js` | Testes focados de pré-análise, write-ahead, conflitos, execução, rollback e interrupção | `node:test`, módulos de execução |
 | `test/runtime.test.js` | Testes focados de política Node, package/lock, dependências e bootstrap sem instalação real | `node:test`, módulos runtime |
 
-Retenção automática, análise final de risco e publicação de GitHub Release ainda não existem; não são representadas como placeholders neste mapa.
+Retenção automática e publicação de GitHub Release ainda não existem; não são representadas como placeholders neste mapa.

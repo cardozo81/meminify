@@ -24,6 +24,7 @@ test('bridge retorna análise estruturada e risco determinístico', async () => 
     assert.equal(response.analysis.executionRisk.technicalLevel, 'Moderado');
     assert.equal(response.analysis.executionRisk.status, 'determined');
     assert.equal(response.analysis.scope.fileCount, 1);
+    assert.match(response.analysis.confirmationFingerprint, /^[a-f0-9]{64}$/);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
@@ -58,6 +59,25 @@ test('bridge ignora autorização substituta e mantém o risco calculado', async
     assert.equal(response.ok, true);
     assert.equal(response.analysis.executionRisk.technicalLevel, 'Moderado');
     assert.equal('riskAssessment' in response.analysis, false);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('execução bloqueia quando escopo ou conflitos mudam depois da análise confirmada', async () => {
+  const { root, source } = await fixture();
+  const destination = source.replace(/\.js$/i, '.min.js');
+  try {
+    const analyzed = await runBridgeRequest({ command: 'analyze' }, { projectRoot: root });
+    assert.equal(analyzed.ok, true);
+    await writeFile(destination, 'const preexistente = true;\n', 'utf8');
+    const response = await runBridgeRequest({
+      command: 'execute',
+      confirmed: true,
+      authorizeOverwriteConflicts: true,
+      confirmationFingerprint: analyzed.analysis.confirmationFingerprint,
+    }, { projectRoot: root });
+    assert.equal(response.ok, false);
+    assert.equal(response.diagnostic.code, 'PLAN_CHANGED_AFTER_ANALYSIS');
+    assert.equal(await readFile(destination, 'utf8'), 'const preexistente = true;\n');
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

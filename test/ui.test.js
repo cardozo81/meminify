@@ -20,6 +20,8 @@ test('UI explicita cancelamento, entrada inválida e recursos indisponíveis', a
   assert.match(source, /'3' \{ \$script:TemporaryAdjustments\.outputMode = 'PreservarOriginaisECriarMinificados'.*return \}/);
   assert.doesNotMatch(source, /4\. Aplicar os ajustes desta execução/);
   assert.doesNotMatch(source, /risco da execução ainda não possui estimativa|EXECUTION_RISK_ALGORITHM_PENDING/);
+  assert.match(source, /confirmationFingerprint = \$analysis\.confirmationFingerprint/);
+  assert.match(source, /authorizeOverwriteConflicts = \$authorizeConflicts/);
   assert.doesNotMatch(source, /Modo temporário \(vazio mantém o persistente/);
   const bytes = await readFile(new URL('../src/app/ui.ps1', import.meta.url));
   assert.deepEqual([...bytes.subarray(0, 3)], [0xEF, 0xBB, 0xBF]);

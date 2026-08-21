@@ -43,7 +43,9 @@ Não há política automática de retenção ou remoção histórica.
 
 ## Runtime e bootstrap
 
-`src/runtime/environment.js` valida Node, npm, package/lock e dependências locais. A política em `resources/runtime-policy.json` aceita Node LTS 24 e 22; 24 é preferida e a instalação interativa aprovada é `24.19.0` por winget. O bootstrap nunca executa `npm ci`/`npm install`: dependência ausente ou divergente bloqueia. A publicação produz `node_modules` de runtime por `npm ci --omit=dev` em staging descartável e a inicialização normal usa essa árvore offline.
+`src/runtime/environment.js` valida Node, npm, package/lock, dependências locais e uma transformação funcional curta pelo esbuild empacotado. A política em `resources/runtime-policy.json` aceita Node LTS 24 e 22; 24 é preferida e a instalação interativa aprovada é `24.19.0` por winget. O bootstrap nunca executa `npm ci`/`npm install`: dependência ausente, divergente ou runtime de plataforma inoperante bloqueia. A publicação produz `node_modules` de runtime por `npm ci --omit=dev` em staging descartável e a inicialização normal usa essa árvore offline.
+
+A confirmação da UI carrega a impressão digital SHA-256 do plano mostrado. O bridge refaz a pré-análise imediatamente antes de executar e bloqueia se escopo, hashes, destinos, conflitos ou demais condições confirmáveis divergirem.
 
 O risco de execução é calculado deterministicamente por modo e perfil antes da confirmação. Conflitos `.min` preexistentes elevam um nível, com teto `Critico`; escopo de arquivos é metadado separado. Não existe autorização substituta para risco indeterminado.
 

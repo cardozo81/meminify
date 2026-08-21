@@ -44,16 +44,18 @@ test('execução bem-sucedida gera relatório integrado sem alterar dados do pla
     await mkdir(join(root, 'Configuracao'), { recursive: true });
     await writeFile(source, 'const valor = 1;\n', 'utf8');
     await writeFile(join(root, 'Configuracao', 'configuracao.ini'), `[Configuracao]\nMotor=esbuild\nPerfil=Padrao\nModoSaida=PreservarOriginaisECriarMinificados\nIncluir01=**/*.js\n\n[Origem.001]\nTipo=Arquivo\nCaminho=${source}\nExecutarPorPadrao=true\nModo=Arquivo\n`, 'utf8');
-    const response = await runBridgeRequest({ command: 'execute', confirmed: true, executionId: 'exec-report' }, { projectRoot: root });
+    const analysis = await runBridgeRequest({ command: 'analyze', executionId: 'exec-report-analysis' }, { projectRoot: root });
+    assert.equal(analysis.ok, true);
+    const response = await runBridgeRequest({ command: 'execute', confirmed: true, confirmationFingerprint: analysis.analysis.confirmationFingerprint, executionId: 'exec-report' }, { projectRoot: root });
     assert.equal(response.ok, true);
     assert.equal(response.result.status, 'completed');
     assert.ok(response.artifacts.reports.txtPath);
     assert.ok(response.artifacts.log.path);
     const names = await listArtifacts(root, 'reports');
-    assert.equal(names.length, 2);
+    assert.equal(names.length, 4);
     const listed = await runBridgeRequest({ command: 'list-artifacts', kind: 'logs' }, { projectRoot: root });
     assert.equal(listed.ok, true);
-    assert.equal(listed.names.length, 1);
+    assert.equal(listed.names.length, 2);
     const viewed = await runBridgeRequest({ command: 'read-artifact', kind: 'reports', name: names.find((name) => name.endsWith('.txt')) }, { projectRoot: root });
     assert.match(viewed.content, /Status: sucesso|Status: completed/);
   } finally { await rm(root, { recursive: true, force: true }); }

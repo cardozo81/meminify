@@ -24,6 +24,22 @@ function parseNpmVersion(version) {
   return /^v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(String(version).trim());
 }
 
+async function validatePackagedRuntimeCapabilities({ projectRoot, dependencies, runtime, commandRunner }) {
+  const expectedEsbuildVersion = dependencies.packageJson?.dependencies?.esbuild;
+  if (!expectedEsbuildVersion) return { valid: true };
+  const probeSource = `import * as esbuild from 'esbuild'; const result = await esbuild.transform('const valor = 1;', { loader: 'js', minify: true }); if (esbuild.version !== ${JSON.stringify(expectedEsbuildVersion)} || !result.code) process.exit(2);`;
+  const probe = await commandRunner(runtime.nodeCommand, ['--input-type=module', '--eval', probeSource], { cwd: projectRoot, timeout: 30000 });
+  if (probe.code !== 0) {
+    return {
+      valid: false,
+      code: 'PACKAGED_RUNTIME_INVALID',
+      message: 'O runtime interno do esbuild empacotado está ausente, corrompido ou incompatível. Reextraia uma distribuição íntegra do Meminify.',
+      probe,
+    };
+  }
+  return { valid: true };
+}
+
 async function discoverNode(commandRunner) {
   const where = await commandRunner('where.exe', ['node.exe']);
   const candidates = where.code === 0 ? where.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [];
@@ -86,5 +102,7 @@ export async function bootstrapEnvironment({
       dependencies,
     };
   }
+  const packagedRuntime = await validatePackagedRuntimeCapabilities({ projectRoot, dependencies, runtime, commandRunner });
+  if (!packagedRuntime.valid) return { ok: false, ...packagedRuntime, runtime, dependencies };
   return { ok: true, runtime, dependencies, installed: false, message: 'Ambiente: OK' };
 }
