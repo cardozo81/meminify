@@ -77,6 +77,14 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `src/bootstrap/cli.mjs` | Entrada leve do bootstrap, mensagens pt-BR e handoff somente se existir menu futuro | Módulos runtime |
 | `resources/runtime-policy.json` | Política versionada de linhas e instalação Node homologadas | Especificação 07 |
 
+## Interface interativa
+
+| Arquivo | Responsabilidade | Dependências relevantes |
+| --- | --- | --- |
+| `src/app/bridge.mjs` | Bridge JSON fino para resumo, pré-análise, execução e criação segura da configuração | Configuração, scanner e execução |
+| `src/app/ui.ps1` | Menu PowerShell, apresentação pt-BR, ajustes temporários e confirmações | `src/app/bridge.mjs` |
+| `Executar.ps1` | Bootstrap validado e abertura do menu interativo | `src/bootstrap/cli.mjs`, `src/app/ui.ps1` |
+
 ## Qualidade e testes
 
 | Arquivo | Responsabilidade | Dependências relevantes |
@@ -90,4 +98,4 @@ Este mapa registra somente arquivos que existem e suas responsabilidades reais.
 | `test/execution.test.js` | Testes focados de pré-análise, write-ahead, conflitos, execução, rollback e interrupção | `node:test`, módulos de execução |
 | `test/runtime.test.js` | Testes focados de política Node, package/lock, dependências e bootstrap sem instalação real | `node:test`, módulos runtime |
 
-Interface PowerShell, restauração manual, análise final de risco e distribuição ainda não existem; não são representados como placeholders neste mapa.
+Restauração manual, relatórios, visualizador de logs, análise final de risco e distribuição ainda não existem; não são representados como placeholders neste mapa.

@@ -48,5 +48,10 @@ if ($null -eq $node) {
 }
 
 $cli = Join-Path $projectRoot 'src\bootstrap\cli.mjs'
-& $node $cli
-exit $LASTEXITCODE
+& $node $cli --bootstrap-only
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+$script:NodeExecutable = $node
+$script:BridgePath = Join-Path $projectRoot 'src\app\bridge.mjs'
+. (Join-Path $projectRoot 'src\app\ui.ps1')
+Start-MeminifyUi
