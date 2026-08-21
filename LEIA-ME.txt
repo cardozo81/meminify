@@ -13,9 +13,14 @@ Como iniciar
 Uso seguro
 - Analise os arquivos antes de minificar. Nenhum arquivo é alterado sem a sua
   confirmação explícita.
-- BackupESobrescreverOriginais valida um backup antes de substituir o original.
-- PreservarOriginaisECriarMinificados mantem o original e cria .min.js ou
-  .min.css ao lado dele.
+- Criar backup e sobrescrever os arquivos originais é o modo persistente padrão;
+  ele valida um backup antes de substituir o original.
+- Preservar os arquivos originais e criar arquivos .min mantém a fonte e cria
+  .min.js ou .min.css ao lado dela; pode ser salvo como modo persistente.
+- O menu Configurações usa escolhas numeradas e confirmação explícita para
+  salvar o modo persistente. Ajustar somente esta execução pode substituir o
+  modo apenas naquela execução e nunca altera configuracao.ini; cancelar os
+  ajustes descarta todo o rascunho.
 - Backups e restauração ficam disponíveis no menu. Relatórios ficam em
   Dados\Relatorios e logs técnicos em Dados\Logs.
 

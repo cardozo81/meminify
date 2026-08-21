@@ -132,6 +132,86 @@ function Show-RestoreMenu {
     }
 }
 
+function Get-ModoSaidaDescricao {
+    param([string]$Mode)
+    switch ($Mode) {
+        'BackupESobrescreverOriginais' { return 'Criar backup e sobrescrever os arquivos originais' }
+        'PreservarOriginaisECriarMinificados' { return 'Preservar os arquivos originais e criar arquivos .min' }
+        default { return "Modo não reconhecido: $Mode" }
+    }
+}
+
+function Get-BridgeErrorMessage {
+    param($Response, [string]$Fallback = 'A operação foi bloqueada por um diagnóstico indisponível.')
+    if ($Response.diagnostic -and $Response.diagnostic.message) { return $Response.diagnostic.message }
+    if ($Response.message) { return $Response.message }
+    if ($Response.code) { return "A operação foi bloqueada ($($Response.code))." }
+    return $Fallback
+}
+
+function Invoke-TemporaryAdjustment {
+    $summary = Invoke-MeminifyBridge @{ command = 'summary' }
+    if (-not $summary.ok -or -not $summary.configuration) { Show-Mensagem (Get-BridgeErrorMessage $summary 'Não foi possível carregar a configuração persistente.') Red; return }
+    $draft = @{}
+    foreach ($key in $script:TemporaryAdjustments.Keys) { $draft[$key] = $script:TemporaryAdjustments[$key] }
+    while ($true) {
+        Write-Host "`nModo de saída somente para esta execução:"
+        Write-Host "Atual persistente: $(Get-ModoSaidaDescricao $summary.configuration.outputMode)"
+        Write-Host '1. Manter a configuração persistente atual'
+        Write-Host '2. Criar backup e sobrescrever os arquivos originais'
+        Write-Host '3. Preservar os arquivos originais e criar arquivos .min'
+        Write-Host '4. Aplicar os ajustes desta execução e voltar ao menu'
+        Write-Host '0. Cancelar e voltar ao menu'
+        $choice = (Read-Host 'Escolha').Trim()
+        switch ($choice) {
+            '1' { [void]$draft.Remove('outputMode'); Show-Mensagem 'Modo temporário definido para a configuração persistente.' Green }
+            '2' { $draft.outputMode = 'BackupESobrescreverOriginais'; Show-Mensagem 'Modo temporário: criar backup e sobrescrever os arquivos originais.' Green }
+            '3' { $draft.outputMode = 'PreservarOriginaisECriarMinificados'; Show-Mensagem 'Modo temporário: preservar os arquivos originais e criar arquivos .min.' Green }
+            '4' { $script:TemporaryAdjustments = $draft; Show-Mensagem 'Ajustes mantidos somente para esta execução.' Green; return }
+            '0' { Show-Mensagem 'Ajustes temporários cancelados; nenhuma alteração foi aplicada.' Yellow; return }
+            default { Show-Mensagem 'Escolha inválida; nenhum ajuste foi aplicado. Escolha uma opção numerada.' Yellow }
+        }
+    }
+}
+
+function Invoke-PersistentConfiguration {
+    $summary = Invoke-MeminifyBridge @{ command = 'summary' }
+    if (-not $summary.ok -or -not $summary.configuration) {
+        if ($summary.code -eq 'CONFIGURATION_MISSING') {
+            Show-Mensagem "Configuração ausente: $($summary.configurationPath)" Yellow
+            if (Confirmar-Acao 'Criar a configuração a partir do modelo, sem sobrescrever arquivo existente') {
+                $created = Invoke-MeminifyBridge @{ command = 'create-configuration'; confirmed = $true }
+                if (-not $created.ok) { Show-Mensagem (Get-BridgeErrorMessage $created 'A configuração não foi criada.') Red; return }
+                Show-Mensagem "Configuração criada: $($created.configurationPath)" Green
+                $summary = Invoke-MeminifyBridge @{ command = 'summary' }
+            } else { return }
+        }
+        if (-not $summary.ok -or -not $summary.configuration) { Show-Mensagem (Get-BridgeErrorMessage $summary 'Não foi possível carregar a configuração persistente.') Red; return }
+    }
+    $current = $summary.configuration.outputMode
+    while ($true) {
+        Write-Host "`nModo de saída atual: $(Get-ModoSaidaDescricao $current)"
+        Write-Host '1. Criar backup e sobrescrever os arquivos originais (padrão)'
+        Write-Host '2. Preservar os arquivos originais e criar arquivos .min'
+        Write-Host '0. Cancelar'
+        $choice = (Read-Host 'Escolha').Trim()
+        if ($choice -eq '0') { Show-Mensagem 'Alteração cancelada; a configuração não foi modificada.' Yellow; return }
+        $newMode = switch ($choice) {
+            '1' { 'BackupESobrescreverOriginais' }
+            '2' { 'PreservarOriginaisECriarMinificados' }
+            default { $null }
+        }
+        if ($null -eq $newMode) { Show-Mensagem 'Escolha inválida; a configuração não foi modificada.' Yellow; continue }
+        if ($newMode -eq $current) { Show-Mensagem 'O modo escolhido já está configurado; nenhuma alteração foi necessária.' Green; return }
+        Show-Mensagem "`nNova configuração: $(Get-ModoSaidaDescricao $newMode)" Cyan
+        if (-not (Confirmar-Acao 'Salvar esta configuração para as próximas execuções')) { Show-Mensagem 'Alteração cancelada; a configuração não foi modificada.' Yellow; return }
+        $saved = Invoke-MeminifyBridge @{ command = 'update-output-mode'; outputMode = $newMode; confirmed = $true }
+        if (-not $saved.ok) { Show-Mensagem (Get-BridgeErrorMessage $saved 'A configuração não foi salva.') Red; return }
+        Show-Mensagem "Configuração persistente salva: $(Get-ModoSaidaDescricao $newMode)" Green
+        return
+    }
+}
+
 function Start-MeminifyUi {
     $identity = Invoke-MeminifyBridge @{ command = 'version' }
     if (-not $identity.ok) { Show-Mensagem 'Não foi possível obter a versão do Meminify.' Red; return }
@@ -162,18 +242,8 @@ function Start-MeminifyUi {
                     $response = Invoke-MeminifyBridge @{ command = 'execute'; adjustments = $script:TemporaryAdjustments; confirmed = $true; authorizeOverwriteConflicts = $true; riskAssessment = @{ authorized = $true; status = 'explicitly-authorized'; reason = 'USER_CONFIRMATION_WITHOUT_EXECUTION_RISK_ESTIMATE' } }
                     if ($response.ok -and $response.result.status -eq 'completed') { Show-Mensagem 'Minificação concluída.' Green } elseif ($response.ok -and $response.result.status -eq 'cancelled') { Show-Mensagem 'Execução cancelada.' Yellow } else { Show-Mensagem "Falha: $($response.diagnostic.message)" Red }
                 }
-                '3' {
-                    $mode = Read-Host 'Modo temporário (vazio mantém o persistente; BackupESobrescreverOriginais ou PreservarOriginaisECriarMinificados)'
-                    if ($mode) { $script:TemporaryAdjustments.outputMode = $mode; Show-Mensagem 'Ajuste mantido somente nesta execução.' Green }
-                }
-                '4' {
-                    $summary = Invoke-MeminifyBridge @{ command = 'summary' }
-                    if ($summary.ok -and $summary.configuration) { $summary.configuration | ConvertTo-Json -Depth 10 | Write-Host }
-                    elseif ($summary.code -eq 'CONFIGURATION_MISSING') {
-                        Show-Mensagem "Configuração ausente: $($summary.configurationPath)" Yellow
-                        if (Confirmar-Acao 'Criar a configuração a partir do modelo, sem sobrescrever arquivo existente') { Show-Mensagem ((Invoke-MeminifyBridge @{ command = 'create-configuration'; confirmed = $true }).configurationPath) Green }
-                    } else { Show-Mensagem "Erro de configuração: $($summary.diagnostic.message)" Red }
-                }
+                '3' { Invoke-TemporaryAdjustment }
+                '4' { Invoke-PersistentConfiguration }
                 '5' { Show-RestoreMenu }
                 '6' { Show-Artefatos reports }
                 '7' { Show-Artefatos logs }

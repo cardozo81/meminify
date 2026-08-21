@@ -51,7 +51,7 @@ As origens podem ser diretórios ou arquivos explícitos. Para diretórios, `Rec
 
 ### Modos de saída e perfis
 
-`BackupESobrescreverOriginais` cria e valida uma cópia em `_source_versions` antes de substituir o original. `PreservarOriginaisECriarMinificados` conserva a fonte e cria um destino `.min.js` ou `.min.css` ao lado dela.
+O modo persistente padrão é **Criar backup e sobrescrever os arquivos originais**. Ele cria e valida uma cópia em `_source_versions` antes de substituir o original. A alternativa é **Preservar os arquivos originais e criar arquivos `.min`**, que conserva a fonte e cria um destino `.min.js` ou `.min.css` ao lado dela. O menu Configurações apresenta essas opções por número e só salva uma mudança após confirmação explícita.
 
 Os perfis disponíveis são `Conservador` (risco muito baixo), `Padrao` (baixo) e `Maximo` (moderado). O motor homologado atual é esbuild para JavaScript e CSS, sem bundling.
 
@@ -67,7 +67,7 @@ Se um destino `.min` já existir, todos os conflitos são listados e uma autoriz
 
 **Configurações persistentes** são gravadas em `configuracao.ini` somente por uma ação persistente com confirmação explícita. Elas podem conter origens/diretórios, arquivos explícitos, recursão, regras de inclusão/exclusão, perfil de minificação, modo de saída e motor homologado.
 
-**Ajustar somente esta execução** permite alterar o modo de saída apenas para a execução atual. O ajuste fica em memória, nunca modifica o INI e é descartado ao fechar o programa.
+**Ajustar somente esta execução** apresenta as mesmas duas opções em um menu numerado, além de manter a configuração persistente. O modo escolhido fica em memória e vale apenas para a execução confirmada; nunca modifica o INI. A opção **Cancelar** descarta todo o rascunho de ajustes e volta ao menu principal.
 
 ## Backups e restauração manual
 

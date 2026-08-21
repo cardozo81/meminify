@@ -1,8 +1,9 @@
-import { access, copyFile, mkdir, readFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { constants } from 'node:fs';
 import { resolve } from 'node:path';
 import { deriveEffectiveConfiguration, loadConfiguration } from '../configuration/index.js';
+import { OUTPUT_MODES } from '../domain/index.js';
 import { createDefaultMinifierRegistry } from '../minifiers/index.js';
 import { createExecutionPlan, executePlan } from '../execution/index.js';
 import { listArtifacts, readArtifact, writeOperationalReports, writeTechnicalLog } from '../observability/index.mjs';
@@ -154,6 +155,29 @@ export async function runBridgeRequest(request, { projectRoot = resolveApplicati
       await copyFile(filePaths.example, filePaths.configuration);
       return { ok: true, configurationPath: filePaths.configuration, created: true };
     } catch (error) {
+      return { ok: false, diagnostic: diagnostic(error) };
+    }
+  }
+  if (request.command === 'update-output-mode') {
+    if (!Object.values(OUTPUT_MODES).includes(request.outputMode)) {
+      return { ok: false, code: 'INVALID_OUTPUT_MODE', message: 'O modo de saída solicitado não é permitido.' };
+    }
+    if (!persistent.ok) return { ok: false, ...persistent };
+    if (request.confirmed !== true) return { ok: false, code: 'CONFIRMATION_REQUIRED', message: 'A alteração exige confirmação explícita.' };
+    const filePath = paths(projectRoot).configuration;
+    const temporaryPath = `${filePath}.tmp-${process.pid}`;
+    try {
+      const text = await readFile(filePath, 'utf8');
+      const lineEnding = text.includes('\r\n') ? '\r\n' : '\n';
+      const modeLine = `ModoSaida=${request.outputMode}`;
+      const updated = /^ModoSaida\s*=.*$/m.test(text)
+        ? text.replace(/^ModoSaida\s*=.*$/m, modeLine)
+        : text.replace(/^(\[Configuracao\].*)$/m, `$1${lineEnding}${modeLine}`);
+      await writeFile(temporaryPath, updated, 'utf8');
+      await rename(temporaryPath, filePath);
+      return { ok: true, configurationPath: filePath, outputMode: request.outputMode, updated: true };
+    } catch (error) {
+      await rm(temporaryPath, { force: true }).catch(() => {});
       return { ok: false, diagnostic: diagnostic(error) };
     }
   }

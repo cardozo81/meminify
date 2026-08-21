@@ -48,3 +48,20 @@ test('execução sem confirmação não modifica e ajuste temporário não persi
     assert.equal(summary.configuration.outputMode, 'PreservarOriginaisECriarMinificados');
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test('alteração persistente do modo exige confirmação e grava somente o enum aprovado', async () => {
+  const { root } = await fixture();
+  const configurationPath = join(root, 'Configuracao', 'configuracao.ini');
+  try {
+    const before = await readFile(configurationPath, 'utf8');
+    const declined = await runBridgeRequest({ command: 'update-output-mode', outputMode: 'PreservarOriginaisECriarMinificados', confirmed: false }, { projectRoot: root });
+    assert.equal(declined.ok, false);
+    assert.equal(await readFile(configurationPath, 'utf8'), before);
+    const invalid = await runBridgeRequest({ command: 'update-output-mode', outputMode: 'Outro', confirmed: true }, { projectRoot: root });
+    assert.equal(invalid.ok, false);
+    assert.equal(await readFile(configurationPath, 'utf8'), before);
+    const saved = await runBridgeRequest({ command: 'update-output-mode', outputMode: 'PreservarOriginaisECriarMinificados', confirmed: true }, { projectRoot: root });
+    assert.equal(saved.ok, true);
+    assert.match(await readFile(configurationPath, 'utf8'), /ModoSaida=PreservarOriginaisECriarMinificados/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

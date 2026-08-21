@@ -12,6 +12,10 @@ test('UI explicita cancelamento, entrada inválida e recursos indisponíveis', a
   assert.match(source, /Nenhum log técnico disponível/);
   assert.match(source, /Invoke-MeminifyBridge/);
   assert.match(source, /StandardInput\.BaseStream/);
+  assert.match(source, /Criar backup e sobrescrever os arquivos originais/);
+  assert.match(source, /Preservar os arquivos originais e criar arquivos \.min/);
+  assert.match(source, /Cancelar e voltar ao menu/);
+  assert.doesNotMatch(source, /Modo temporário \(vazio mantém o persistente/);
   const bytes = await readFile(new URL('../src/app/ui.ps1', import.meta.url));
   assert.deepEqual([...bytes.subarray(0, 3)], [0xEF, 0xBB, 0xBF]);
 });

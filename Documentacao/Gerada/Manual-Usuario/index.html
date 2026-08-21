@@ -53,7 +53,7 @@ Incluir01=*.js</code></pre>
 <h3>Origens, recursão e padrões</h3>
 <p>As origens podem ser diretórios ou arquivos explícitos. Para diretórios, <code>Recursivo=true</code> ou <code>Recursivo=false</code> é obrigatório. Os modos são <code>Todos</code>, <code>Selecionados</code> e <code>Arquivo</code> (somente para origem de arquivo). Inclusões e exclusões globais e por origem são avaliadas pelo scanner; links, arquivos somente leitura, extensões não suportadas e exclusões técnicas são ignorados com motivo.</p>
 <h3>Modos de saída e perfis</h3>
-<p><code>BackupESobrescreverOriginais</code> cria e valida uma cópia em <code>_source_versions</code> antes de substituir o original. <code>PreservarOriginaisECriarMinificados</code> conserva a fonte e cria um destino <code>.min.js</code> ou <code>.min.css</code> ao lado dela.</p>
+<p>O modo persistente padrão é **Criar backup e sobrescrever os arquivos originais**. Ele cria e valida uma cópia em <code>_source_versions</code> antes de substituir o original. A alternativa é **Preservar os arquivos originais e criar arquivos <code>.min</code>**, que conserva a fonte e cria um destino <code>.min.js</code> ou <code>.min.css</code> ao lado dela. O menu Configurações apresenta essas opções por número e só salva uma mudança após confirmação explícita.</p>
 <p>Os perfis disponíveis são <code>Conservador</code> (risco muito baixo), <code>Padrao</code> (baixo) e <code>Maximo</code> (moderado). O motor homologado atual é esbuild para JavaScript e CSS, sem bundling.</p>
 <h2>Analisar e minificar</h2>
 <p>Escolha **Analisar arquivos** para ver origens efetivas, recursão, modo de saída, perfil, risco do perfil, encontrados, elegíveis, ignorados, conflitos <code>.min</code>, avisos e bloqueios. A análise não modifica arquivos.</p>
@@ -61,7 +61,7 @@ Incluir01=*.js</code></pre>
 <p>Se um destino <code>.min</code> já existir, todos os conflitos são listados e uma autorização global específica é exigida. Recusar cancela a execução inteira sem gerar saídas parciais.</p>
 <h2>Ajustes temporários</h2>
 <p>**Configurações persistentes** são gravadas em <code>configuracao.ini</code> somente por uma ação persistente com confirmação explícita. Elas podem conter origens/diretórios, arquivos explícitos, recursão, regras de inclusão/exclusão, perfil de minificação, modo de saída e motor homologado.</p>
-<p>**Ajustar somente esta execução** permite alterar o modo de saída apenas para a execução atual. O ajuste fica em memória, nunca modifica o INI e é descartado ao fechar o programa.</p>
+<p>**Ajustar somente esta execução** apresenta as mesmas duas opções em um menu numerado, além de manter a configuração persistente. O modo escolhido fica em memória e vale apenas para a execução confirmada; nunca modifica o INI. A opção **Cancelar** descarta todo o rascunho de ajustes e volta ao menu principal.</p>
 <h2>Backups e restauração manual</h2>
 <p>No modo de sobrescrita, a restauração lista backups válidos em <code>_source_versions</code> e também aceita uma pasta exata informada manualmente. O manifesto, a cópia de backup, os hashes, os caminhos e o estado técnico são validados antes de formar um plano.</p>
 <p>Se o arquivo atual ainda corresponde ao hash minificado registrado, basta a confirmação normal. Se foi alterado ou está ausente, há uma confirmação adicional; recusá-la preserva esse item. O arquivo minificado atual não recebe backup durante a restauração.</p>
